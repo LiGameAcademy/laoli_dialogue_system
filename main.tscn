@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://v57ficdmfy2o"]
+[gd_scene load_steps=4 format=3 uid="uid://v57ficdmfy2o"]
 
 [ext_resource type="Texture2D" uid="uid://xlv25d8qgw83" path="res://icon.svg" id="1_0xm2m"]
 [ext_resource type="Script" uid="uid://w570xbe14q1" path="res://player.gd" id="2_h2yge"]
+[ext_resource type="PackedScene" uid="uid://bvdcsylpd845v" path="res://dialogue_ui.tscn" id="3_h2yge"]
 
 [node name="Main" type="Node2D"]
 
@@ -17,3 +18,5 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 5
 theme_override_font_sizes/font_size = 30
 text = "对话用标签"
+
+[node name="DialogueUI" parent="." instance=ExtResource("3_h2yge")]
