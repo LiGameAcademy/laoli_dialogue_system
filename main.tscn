@@ -1,0 +1,19 @@
+[gd_scene load_steps=3 format=3 uid="uid://v57ficdmfy2o"]
+
+[ext_resource type="Texture2D" uid="uid://xlv25d8qgw83" path="res://icon.svg" id="1_0xm2m"]
+[ext_resource type="Script" uid="uid://w570xbe14q1" path="res://player.gd" id="2_h2yge"]
+
+[node name="Main" type="Node2D"]
+
+[node name="Player" type="Sprite2D" parent="."]
+position = Vector2(452, 272)
+texture = ExtResource("1_0xm2m")
+script = ExtResource("2_h2yge")
+
+[node name="Label" type="Label" parent="Player"]
+offset_right = 40.0
+offset_bottom = 23.0
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 30
+text = "对话用标签"
