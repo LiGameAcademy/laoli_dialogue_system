@@ -3,18 +3,26 @@ extends Node
 
 ## 用一个变量来存储解析后的对话数据
 var dialogue_data: Dictionary = {}
+var current_node_id: String = "" 	## 追踪当前对话节点的ID
+var is_active: bool = false 		## 标记对话系统是否正在运行
 
 ## 当有新的对话内容需要显示时，发出此信号
-signal text_updated(character_name, text)
+## [param character_name] 对话角色名称
+## [param text] 对话文本
+signal text_updated(character_name: String, text: String)
 ## 当对话流程结束时，发出此信号
 signal dialogue_finished
+## 当需要向玩家展示选项时，发出此信号
+## [param choices] 选项数组
+signal choices_updated(choices: Array)
 
 ## 游戏启动时，自动加载并解析JSON文件
-func _ready():
+func _ready() -> void:
 	load_dialogue_file("res://dialogue.json")
 
 ## 加载并解析指定的JSON文件
-func load_dialogue_file(path: String):
+## [param path] JSON文件的路径
+func load_dialogue_file(path: String) -> void:
 	# 使用FileAccess安全地打开文件
 	var file = FileAccess.open(path, FileAccess.READ)
 	if not file:
@@ -36,16 +44,32 @@ func load_dialogue_file(path: String):
 		print("Error: Failed to parse JSON file. Check for syntax errors in: ", path)
 
 ## 对外提供一个开始对话的接口
-func start_dialogue(node_id: String):
+## [param node_id] 当前需要处理的节点ID
+func start_dialogue(node_id: String) -> void:
+	if is_active:
+		return
+	is_active = true # 标记对话开始
 	if dialogue_data.has(node_id):
-		# 为了后续扩展，我们用一个变量来追踪当前节点
 		_process_node(node_id)
 	else:
 		print("Error: Dialogue node not found: ", node_id)
-		_end_dialogue() # 如果ID无效，也应该结束对话流程
-		
+		_end_dialogue()
+
+## 供UI调用，告诉我们玩家做了哪个选择
+## [param choice_data] 玩家选择的选项数据
+func make_choice(choice_data: Dictionary) -> void:
+	if choice_data.has("next_node"):
+		# 根据玩家的选择，处理下一个节点
+		_process_node(choice_data["next_node"])
+	else:
+		# 如果选择数据有问题，直接结束对话
+		_end_dialogue()
+
 ## 处理单个对话节点
-func _process_node(node_id: String):
+## [param node_id] 当前需要处理的节点ID
+func _process_node(node_id: String) -> void:
+	current_node_id = node_id # 更新当前节点ID
+
 	if node_id == "END":
 		_end_dialogue()
 		return
@@ -54,18 +78,23 @@ func _process_node(node_id: String):
 	var character = node_data.get("character", "旁白")
 	var text = node_data.get("text", "...")
 	
-	# 这就是关键！不再是print，而是发出信号！
-	emit_signal("text_updated", character, text)
+	text_updated.emit(character, text)
 	
-	# 暂时先处理单线对话的情况
-	if node_data.has("next_node"):
-		# 这里我们先不处理，下一课会让它变得更完善
+	# 核心改动：检查是否存在选项
+	if node_data.has("choices"):
+		# 如果有，就发出 choices_updated 信号
+		choices_updated.emit(node_data["choices"])
+	elif node_data.has("next_node"):
+		# 如果是单线对话，我们暂时先不自动跳转
+		# 等待玩家按键继续，这个逻辑我们放在UI层处理
 		pass
-	# else:
-		# 如果没有choices也没有next_node，对话就卡在这里了，等待UI的下一步指令
-		# pass
+	else:
+		# 如果既没有选项也没有下一句，就结束对话
+		_end_dialogue()
 
 ## 处理对话结束
-func _end_dialogue():
+func _end_dialogue() -> void:
+	is_active = false # 标记对话结束
+	current_node_id = ""
 	print("Dialogue Ended.")
-	emit_signal("dialogue_finished")
+	dialogue_finished.emit()

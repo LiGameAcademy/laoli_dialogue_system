@@ -19,6 +19,10 @@ config/icon="res://icon.svg"
 
 DialogueManager="*res://dialogue_manager.gd"
 
+[display]
+
+window/stretch/mode="canvas_items"
+
 [rendering]
 
 renderer/rendering_method="mobile"

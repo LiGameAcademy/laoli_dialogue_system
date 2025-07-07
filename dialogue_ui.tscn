@@ -6,17 +6,24 @@
 script = ExtResource("1_njptv")
 
 [node name="Panel" type="Panel" parent="."]
+unique_name_in_owner = true
 offset_left = 100.0
 offset_top = 500.0
 offset_right = 900.0
-offset_bottom = 700.0
+offset_bottom = 637.0
 
-[node name="NameLabel" type="Label" parent="Panel"]
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel"]
 layout_mode = 1
-offset_left = -9.0
-offset_top = -27.0
-offset_right = 119.0
-offset_bottom = 10.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="NameLabel" type="Label" parent="Panel/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 5
 theme_override_font_sizes/font_size = 22
@@ -24,11 +31,12 @@ text = "角色名"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="TextLabel" type="RichTextLabel" parent="Panel"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+[node name="TextLabel" type="RichTextLabel" parent="Panel/VBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
 bbcode_enabled = true
+
+[node name="ChoicesContainer" type="VBoxContainer" parent="Panel/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
