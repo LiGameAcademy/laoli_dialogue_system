@@ -1,0 +1,29 @@
+{
+    "village_chief_start": {
+      "character": "村长",
+      "text": "年轻人，你终于来了。村子东边的森林里最近不太平，你能去调查一下吗？",
+      "choices": [
+        {
+          "text": "好的，我这就去。",
+          "next_node": "accept_quest_forest"
+        },
+        {
+          "text": "我还需要一些准备。",
+          "next_node": "refuse_quest_forest"
+        }
+      ]
+    },
+    
+    "accept_quest_forest": {
+      "character": "村长",
+      "text": "太好了！这是我给你的一些干粮，路上小心。",
+      "next_node": "END"
+    },
+  
+    "refuse_quest_forest": {
+      "character": "村长",
+      "text": "好吧，那你先去准备一下吧，村子的安危就靠你了。",
+      "next_node": "END"
+    }
+  }
+  
