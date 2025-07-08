@@ -82,8 +82,32 @@ func process_node(node_id: String) -> void:
 	
 	# 核心改动：检查是否存在选项
 	if node_data.has("choices"):
-		# 如果有，就发出 choices_updated 信号
-		choices_updated.emit(node_data["choices"])
+		var available_choices = [] # 创建一个空数组来存放可用选项
+		for choice in node_data["choices"]:
+			# 检查每个选项的条件
+			if _check_condition(choice.get("condition", {})):
+				available_choices.append(choice) # 条件满足，才加入可用列表
+		
+		# 在发出信号前，处理文本的动态生成
+		var localized_choices = []
+		for choice in available_choices:
+			var localized_choice = choice.duplicate() # 复制一份，避免修改原始数据
+			var final_text = tr(choice["text"]) # 先获取基础文本
+
+			# 新增逻辑：检查是否需要添加条件前缀
+			if choice.get("display_condition_prefix", false) and choice.has("condition"):
+				var condition = choice["condition"]
+				# 目前只处理has_item, 未来可扩展
+				if condition.has("has_item"):
+					var item_id = condition["has_item"]
+					# 通过ID从GameState获取道具显示名称
+					var item_name = GameState.get_item_name(item_id)
+					# 格式化字符串，动态生成最终的显示文本
+					final_text = "(需要【%s】) %s" % [item_name, final_text]
+					
+			localized_choice["text"] = final_text
+			localized_choices.append(localized_choice)
+		emit_signal("choices_updated", localized_choices)
 	elif node_data.has("next_node"):
 		# 如果是单线对话，我们暂时先不自动跳转
 		# 等待玩家按键继续，这个逻辑我们放在UI层处理
@@ -91,6 +115,26 @@ func process_node(node_id: String) -> void:
 	else:
 		# 如果既没有选项也没有下一句，就结束对话
 		_end_dialogue()
+
+## 检查条件是否满足
+func _check_condition(condition_data: Dictionary) -> bool:
+	if condition_data.is_empty():
+		# 没有condition字段，默认显示
+		return true
+	
+	# 检查 "has_item" 条件
+	if condition_data.has("has_item"):
+		# 去询问GameState，现在传递的是ID
+		if not GameState.has_item(condition_data["has_item"]):
+			return false # 如果GameState说没有，条件不满足
+	
+	# 检查 "has_completed_quest" 条件 (未来扩展)
+	# if condition_data.has("quest_completed"):
+	#	  if not GameState.has_completed_quest(condition_data["quest_completed"]):
+	#		  return false
+
+	# 所有条件都检查通过了，才返回true
+	return true
 
 ## 处理对话结束
 func _end_dialogue() -> void:

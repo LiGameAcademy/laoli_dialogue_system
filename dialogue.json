@@ -10,10 +10,18 @@
         {
           "text": "我还需要一些准备。",
           "next_node": "refuse_quest_forest"
+        },
+        {
+          "text": "我早就调查过了，没什么大不了的。",
+          "display_condition_prefix": true,
+          "next_node": "already_done_quest",
+          "condition": {
+            "has_item": "badge_of_courage"
+          }
         }
       ]
     },
-    
+  
     "accept_quest_forest": {
       "character": "村长",
       "text": "太好了！这是我给你的一些干粮，路上小心。",
@@ -23,6 +31,12 @@
     "refuse_quest_forest": {
       "character": "村长",
       "text": "好吧，那你先去准备一下吧，村子的安危就靠你了。",
+      "next_node": "END"
+    },
+
+    "already_done_quest": {
+      "character": "村长",
+      "text": "哦？看不出来你年纪轻轻，身手却如此了得！这是给你的奖励。",
       "next_node": "END"
     }
   }
