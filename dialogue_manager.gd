@@ -15,6 +15,7 @@ signal dialogue_finished
 ## 当需要向玩家展示选项时，发出此信号
 ## [param choices] 选项数组
 signal choices_updated(choices: Array)
+signal action_triggered(action: Dictionary)
 
 ## 游戏启动时，自动加载并解析JSON文件
 func _ready() -> void:
@@ -79,7 +80,11 @@ func process_node(node_id: String) -> void:
 	var text = node_data.get("text", "...")
 	
 	text_updated.emit(character, text)
-	
+	# 新增：检查并触发节点自身的动作
+	if node_data.has("action"):
+		# 现在我们传递的是整个action字典，而不再是字符串
+		action_triggered.emit(node_data["action"])
+
 	# 核心改动：检查是否存在选项
 	if node_data.has("choices"):
 		var available_choices = [] # 创建一个空数组来存放可用选项

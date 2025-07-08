@@ -25,9 +25,14 @@
     "accept_quest_forest": {
       "character": "村长",
       "text": "太好了！这是我给你的一些干粮，路上小心。",
+      "action": {
+        "type": "give_item",
+        "id": "bread",
+        "amount": 2
+      },
       "next_node": "END"
     },
-  
+    
     "refuse_quest_forest": {
       "character": "村长",
       "text": "好吧，那你先去准备一下吧，村子的安危就靠你了。",
@@ -37,6 +42,10 @@
     "already_done_quest": {
       "character": "村长",
       "text": "哦？看不出来你年纪轻轻，身手却如此了得！这是给你的奖励。",
+      "action": {
+        "type": "give_reward",
+        "id": "QUEST_1_REWARD"
+      },
       "next_node": "END"
     }
   }
