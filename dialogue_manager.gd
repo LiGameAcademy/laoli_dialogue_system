@@ -50,7 +50,7 @@ func start_dialogue(node_id: String) -> void:
 		return
 	is_active = true # 标记对话开始
 	if dialogue_data.has(node_id):
-		_process_node(node_id)
+		process_node(node_id)
 	else:
 		print("Error: Dialogue node not found: ", node_id)
 		_end_dialogue()
@@ -60,14 +60,14 @@ func start_dialogue(node_id: String) -> void:
 func make_choice(choice_data: Dictionary) -> void:
 	if choice_data.has("next_node"):
 		# 根据玩家的选择，处理下一个节点
-		_process_node(choice_data["next_node"])
+		process_node(choice_data["next_node"])
 	else:
 		# 如果选择数据有问题，直接结束对话
 		_end_dialogue()
 
 ## 处理单个对话节点
 ## [param node_id] 当前需要处理的节点ID
-func _process_node(node_id: String) -> void:
+func process_node(node_id: String) -> void:
 	current_node_id = node_id # 更新当前节点ID
 
 	if node_id == "END":

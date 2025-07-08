@@ -26,7 +26,7 @@ func _unhandled_input(event) -> void:
 		var current_node_data = DialogueManager.dialogue_data[DialogueManager.current_node_id]
 		# 如果当前对话有 "next_node"，则继续
 		if current_node_data.has("next_node"):
-			DialogueManager._process_node(current_node_data["next_node"])
+			DialogueManager.process_node(current_node_data["next_node"])
 		# 避免重复触发
 		get_viewport().set_input_as_handled()
 
