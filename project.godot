@@ -24,6 +24,10 @@ GameState="*res://game_state.gd"
 
 window/stretch/mode="canvas_items"
 
+[internationalization]
+
+locale/test="en"
+
 [rendering]
 
 renderer/rendering_method="mobile"
