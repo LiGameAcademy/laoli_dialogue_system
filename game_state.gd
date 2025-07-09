@@ -31,6 +31,22 @@ func get_item_name(item_id: String) -> String:
 		return tr(item_database[item_id]["name"])
 	return "[物品ID不存在]"
 
+## 处理给于道具动作
+func handle_give_item_action(action_data: Dictionary):
+	var item_id = action_data.get("id", "")
+	if not item_id.is_empty():
+		add_item(item_id)
+		var item_name = get_item_name(item_id)
+		print("[GameState] Player received item: %s (ID: %s)" % [item_name, item_id])
+
+## 处理奖励动作
+func handle_give_reward_action(action_data: Dictionary):
+	var reward_id = action_data.get("id", "")
+	if reward_id == "QUEST_1_REWARD":
+		add_item("gold_coin_pouch")
+		add_item("letter_of_recommendation")
+		print("[GameState] Player received rewards for: ", reward_id)
+
 # 未来可以扩展更多接口
 # func has_completed_quest(quest_id: String) -> bool: ...
 

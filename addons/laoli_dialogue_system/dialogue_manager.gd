@@ -8,6 +8,10 @@ var dialogue_data: Dictionary = {}
 var current_node_id: String = "" 	## 追踪当前对话节点的ID
 var is_active: bool = false 		## 标记对话系统是否正在运行
 
+# 创建字典，作为我们所有外部逻辑函数的“注册表”
+var condition_checkers: Dictionary = {} ## 用于条件检查
+var action_handlers: Dictionary = {}    ## 用于动作处理
+
 ## 当有新的对话内容需要显示时，发出此信号
 ## [param character_name] 对话角色名称
 ## [param text] 对话文本
@@ -68,6 +72,16 @@ func make_choice(choice_data: Dictionary) -> void:
 		# 如果选择数据有问题，直接结束对话
 		_end_dialogue()
 
+## 提供公开的注册函数（“插座”），让外部系统可以把“检查器”“插”进来
+func register_condition_checker(condition_type: String, checker_callable: Callable):
+	condition_checkers[condition_type] = checker_callable
+	print("Condition checker registered for type: '%s'" % condition_type)
+
+## 提供公开的注册函数（“插座”），让外部系统可以把“动作处理器”“插”进来
+func register_action_handler(action_type: String, handler_callable: Callable):
+	action_handlers[action_type] = handler_callable
+	print("Action handler registered for type: '%s'" % action_type)
+
 ## 处理单个对话节点
 ## [param node_id] 当前需要处理的节点ID
 func process_node(node_id: String) -> void:
@@ -87,8 +101,15 @@ func process_node(node_id: String) -> void:
 
 	# 检查并触发节点自身的动作
 	if node_data.has("action"):
-		# 现在我们传递的是整个action字典，而不再是字符串
-		action_triggered.emit(node_data["action"])
+		var action_data = node_data["action"]
+		if action_data is Dictionary and action_data.has("type"):
+			var action_type = action_data["type"]
+			# 在注册表中查找对应的动作处理函数
+			if action_handlers.has(action_type):
+				# 调用注册进来的action处理函数
+				action_handlers[action_type].call(action_data)
+			else:
+				print("Warning: No handler for action type: '%s'" % action_type)
 
 	if node_data.has("choices"):
 		var available_choices = [] # 创建一个空数组来存放可用选项
@@ -127,22 +148,21 @@ func process_node(node_id: String) -> void:
 
 ## 检查条件是否满足
 func _check_condition(condition_data: Dictionary) -> bool:
-	if condition_data.is_empty():
-		# 没有condition字段，默认显示
-		return true
+	if condition_data.is_empty(): return true
 	
-	# 检查 "has_item" 条件
-	if condition_data.has("has_item"):
-		# 去询问GameState，现在传递的是ID
-		if not GameState.has_item(condition_data["has_item"]):
-			return false # 如果GameState说没有，条件不满足
-	
-	# 检查 "has_completed_quest" 条件 (未来扩展)
-	# if condition_data.has("quest_completed"):
-	#	  if not GameState.has_completed_quest(condition_data["quest_completed"]):
-	#		  return false
-
-	# 所有条件都检查通过了，才返回true
+	for condition_type in condition_data:
+		var condition_value = condition_data[condition_type]
+		
+		# 在我们的注册表中查找对应的检查函数
+		if condition_checkers.has(condition_type):
+			var checker_func = condition_checkers[condition_type]
+			# 调用注册进来的Callable，并用其返回值作为判断结果
+			if not checker_func.call(condition_value):
+				return false # 一票否决
+		else:
+			# 如果找不到对应的检查函数，打印一个警告，并默认当做不满足
+			print("Warning: No checker registered for condition type: '%s'" % condition_type)
+			return false
 	return true
 
 ## 处理对话结束

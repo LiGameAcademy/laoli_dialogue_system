@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 
 GameState="*res://game_state.gd"
 DialogueManager="*res://addons/laoli_dialogue_system/dialogue_manager.gd"
+Bootstrap="*res://bootstrap.gd"
 
 [display]
 
