@@ -1,6 +1,8 @@
 # dialogue_manager.gd
 extends Node
 
+const DIALOGUE_FILE_PATH = "res://addons/laoli_dialogue_system/dialogue.json"
+
 ## 用一个变量来存储解析后的对话数据
 var dialogue_data: Dictionary = {}
 var current_node_id: String = "" 	## 追踪当前对话节点的ID
@@ -19,8 +21,7 @@ signal action_triggered(action: Dictionary)
 
 ## 游戏启动时，自动加载并解析JSON文件
 func _ready() -> void:
-	load_dialogue_file("res://dialogue.json")
-	# load_dialogue_file("res://dialogue_multilingual.json")
+	load_dialogue_file(DIALOGUE_FILE_PATH)
 
 ## 加载并解析指定的JSON文件
 ## [param path] JSON文件的路径

@@ -1,10 +1,10 @@
-[gd_scene load_steps=3 format=3 uid="uid://bvdcsylpd845v"]
+[gd_scene load_steps=3 format=3 uid="uid://c7jbvgjqg3w8h"]
 
-[ext_resource type="Script" uid="uid://bxu70q5yqc70" path="res://dialogue_ui.gd" id="1_njptv"]
+[ext_resource type="Script" uid="uid://bxu70q5yqc70" path="res://addons/laoli_dialogue_system/dialogue_ui.gd" id="1_25t1q"]
 [ext_resource type="AudioStream" uid="uid://dgsdna7h8jl7h" path="res://typing.mp3" id="2_2x5cq"]
 
 [node name="DialogueUI" type="CanvasLayer"]
-script = ExtResource("1_njptv")
+script = ExtResource("1_25t1q")
 
 [node name="Panel" type="Panel" parent="."]
 unique_name_in_owner = true

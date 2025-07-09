@@ -17,17 +17,20 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-DialogueManager="*res://dialogue_manager.gd"
 GameState="*res://game_state.gd"
+DialogueManager="*res://addons/laoli_dialogue_system/dialogue_manager.gd"
 
 [display]
 
 window/stretch/mode="canvas_items"
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/laoli_dialogue_system/plugin.cfg")
+
 [internationalization]
 
-locale/translations=PackedStringArray("res://translations.en.translation", "res://translations.zh_CN.translation")
-locale/test="en"
+locale/translations=PackedStringArray("res://addons/laoli_dialogue_system/translations.en.translation", "res://addons/laoli_dialogue_system/translations.zh_CN.translation")
 
 [rendering]
 

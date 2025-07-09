@@ -2,7 +2,7 @@
 
 [ext_resource type="Texture2D" uid="uid://xlv25d8qgw83" path="res://icon.svg" id="1_0xm2m"]
 [ext_resource type="Script" uid="uid://w570xbe14q1" path="res://player.gd" id="2_h2yge"]
-[ext_resource type="PackedScene" uid="uid://bvdcsylpd845v" path="res://dialogue_ui.tscn" id="3_h2yge"]
+[ext_resource type="PackedScene" uid="uid://c7jbvgjqg3w8h" path="res://addons/laoli_dialogue_system/dialogue_ui.tscn" id="3_h2yge"]
 
 [node name="Main" type="Node2D"]
 
