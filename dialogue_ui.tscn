@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://bvdcsylpd845v"]
+[gd_scene load_steps=3 format=3 uid="uid://bvdcsylpd845v"]
 
 [ext_resource type="Script" uid="uid://bxu70q5yqc70" path="res://dialogue_ui.gd" id="1_njptv"]
+[ext_resource type="AudioStream" uid="uid://dgsdna7h8jl7h" path="res://typing.mp3" id="2_2x5cq"]
 
 [node name="DialogueUI" type="CanvasLayer"]
 script = ExtResource("1_njptv")
@@ -46,3 +47,6 @@ bbcode_enabled = true
 [node name="ChoicesContainer" type="VBoxContainer" parent="Panel/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
+
+[node name="TypingSoundPlayer" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("2_2x5cq")

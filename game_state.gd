@@ -14,7 +14,7 @@ var completed_quests = ["新手村报道"]
 
 func _ready() -> void:
 	# 连接信号的代码保持不变
-	DialogueManager.action_triggered.connect(on_action_triggered)
+	DialogueManager.action_triggered.connect(_on_action_triggered)
 
 # 3. has_item和add_item现在都使用ID
 func has_item(item_id: String) -> bool:
@@ -35,7 +35,7 @@ func get_item_name(item_id: String) -> String:
 # func has_completed_quest(quest_id: String) -> bool: ...
 
 ## 处理接收到的结构化动作事件
-func on_action_triggered(action_data: Dictionary) -> void:
+func _on_action_triggered(action_data: Dictionary) -> void:
 	# 检查传入的是否是字典，保证代码健壮性
 	if not action_data is Dictionary or not action_data.has("type"):
 		return
