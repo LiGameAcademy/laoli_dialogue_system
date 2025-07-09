@@ -26,6 +26,7 @@ window/stretch/mode="canvas_items"
 
 [internationalization]
 
+locale/translations=PackedStringArray("res://translations.en.translation", "res://translations.zh_CN.translation")
 locale/test="en"
 
 [rendering]
