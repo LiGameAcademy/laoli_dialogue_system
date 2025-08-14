@@ -92,7 +92,7 @@ func _on_choice_pressed(choice_data: Dictionary) -> void:
 	# 通知 DialogueManager，玩家做出了选择
 	DialogueManager.make_choice(choice_data)
 
-func _on_typing_timer_timeout():
+func _on_typing_timer_timeout() -> void:
 	# 每次定时器触发，就增加一个可见字符
 	text_label.visible_characters += 1
 

@@ -3,10 +3,9 @@ extends Node
 
 const DIALOGUE_FILE_PATH = "res://addons/laoli_dialogue_system/dialogue.json"
 
-## 用一个变量来存储解析后的对话数据
-var dialogue_data: Dictionary = {}
-var current_node_id: String = "" 	## 追踪当前对话节点的ID
-var is_active: bool = false 		## 标记对话系统是否正在运行
+var dialogue_data: Dictionary = {}		## 存储解析后的对话数据
+var current_node_id: String = "" 		## 追踪当前对话节点的ID
+var is_active: bool = false 			## 标记对话系统是否正在运行
 
 # 创建字典，作为我们所有外部逻辑函数的“注册表”
 var condition_checkers: Dictionary = {} ## 用于条件检查
@@ -21,7 +20,7 @@ signal dialogue_finished
 ## 当需要向玩家展示选项时，发出此信号
 ## [param choices] 选项数组
 signal choices_updated(choices: Array)
-signal action_triggered(action: Dictionary)
+# signal action_triggered(action: Dictionary)
 
 ## 游戏启动时，自动加载并解析JSON文件
 func _ready() -> void:
@@ -73,12 +72,12 @@ func make_choice(choice_data: Dictionary) -> void:
 		_end_dialogue()
 
 ## 提供公开的注册函数（“插座”），让外部系统可以把“检查器”“插”进来
-func register_condition_checker(condition_type: String, checker_callable: Callable):
+func register_condition_checker(condition_type: String, checker_callable: Callable) -> void:
 	condition_checkers[condition_type] = checker_callable
 	print("Condition checker registered for type: '%s'" % condition_type)
 
 ## 提供公开的注册函数（“插座”），让外部系统可以把“动作处理器”“插”进来
-func register_action_handler(action_type: String, handler_callable: Callable):
+func register_action_handler(action_type: String, handler_callable: Callable) -> void:
 	action_handlers[action_type] = handler_callable
 	print("Action handler registered for type: '%s'" % action_type)
 
