@@ -3,12 +3,12 @@ extends Sprite2D
 
 @onready var dialogue_label = $Label
 
-func _ready():
+func _ready() -> void:
 	# 游戏开始时，先隐藏对话框
 	dialogue_label.hide()
 
 # 监听全局输入事件
-func _unhandled_input(event):
+func _unhandled_input(event) -> void:
 	# 当玩家按下"ui_accept"键 (通常是回车或空格)
 	if event.is_action_pressed("ui_accept"):
 		if DialogueManager.is_active:

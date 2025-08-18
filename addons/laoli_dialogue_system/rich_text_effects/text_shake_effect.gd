@@ -1,3 +1,4 @@
+# res://addons/laoli_dialogue_system/rich_text_effects/text_shake_effect.gd
 extends RichTextEffect
 class_name TextShakeEffect
 
