@@ -1,7 +1,12 @@
-[gd_scene load_steps=3 format=3 uid="uid://c7jbvgjqg3w8h"]
+[gd_scene load_steps=5 format=3 uid="uid://c7jbvgjqg3w8h"]
 
 [ext_resource type="Script" uid="uid://bxu70q5yqc70" path="res://addons/laoli_dialogue_system/dialogue_ui.gd" id="1_25t1q"]
 [ext_resource type="AudioStream" uid="uid://dgsdna7h8jl7h" path="res://typing.mp3" id="2_2x5cq"]
+[ext_resource type="Script" uid="uid://2hdvi1pkbdl5" path="res://addons/laoli_dialogue_system/rich_text_effects/text_shake_effect.gd" id="2_683g5"]
+
+[sub_resource type="RichTextEffect" id="RichTextEffect_r5kn6"]
+script = ExtResource("2_683g5")
+metadata/_custom_type_script = "uid://2hdvi1pkbdl5"
 
 [node name="DialogueUI" type="CanvasLayer"]
 script = ExtResource("1_25t1q")
@@ -43,6 +48,7 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
 bbcode_enabled = true
+custom_effects = [SubResource("RichTextEffect_r5kn6")]
 
 [node name="ChoicesContainer" type="VBoxContainer" parent="Panel/VBoxContainer"]
 unique_name_in_owner = true

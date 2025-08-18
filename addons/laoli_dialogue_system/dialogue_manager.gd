@@ -101,15 +101,11 @@ func process_node(node_id: String) -> void:
 
 	# 检查并触发节点自身的动作
 	if node_data.has("action"):
-		var action_data = node_data["action"]
-		if action_data is Dictionary and action_data.has("type"):
-			var action_type = action_data["type"]
-			# 在注册表中查找对应的动作处理函数
-			if action_handlers.has(action_type):
-				# 调用注册进来的action处理函数
-				action_handlers[action_type].call(action_data)
-			else:
-				print("Warning: No handler for action type: '%s'" % action_type)
+		_process_action(node_data.get("action"))
+	elif node_data.has("actions"):
+		var actions : Array = node_data.get("actions")
+		for action_data in actions:
+			_process_action(action_data)
 
 	if node_data.has("choices"):
 		var available_choices = [] # 创建一个空数组来存放可用选项
@@ -133,6 +129,10 @@ func process_node(node_id: String) -> void:
 					var item_name = GameState.get_item_name(item_id)
 					# "(需要【%s】) %s" 这个key也需要加入到CSV文件中
 					final_text = tr("UI_CONDITION_PREFIX_HAS_ITEM") % [item_name, final_text]
+			
+			if choice.has("action"):
+				# 分支选项也支持动作逻辑
+				pass
 			
 			localized_choice["text"] = final_text
 			localized_choices.append(localized_choice)
@@ -164,6 +164,17 @@ func _check_condition(condition_data: Dictionary) -> bool:
 			print("Warning: No checker registered for condition type: '%s'" % condition_type)
 			return false
 	return true
+
+## 处理动作
+func _process_action(action_data: Dictionary) -> void:
+	if action_data is Dictionary and action_data.has("type"):
+		var action_type = action_data["type"]
+		# 在注册表中查找对应的动作处理函数
+		if action_handlers.has(action_type):
+			# 调用注册进来的action处理函数
+			action_handlers[action_type].call(action_data)
+		else:
+			print("Warning: No handler for action type: '%s'" % action_type)
 
 ## 处理对话结束
 func _end_dialogue() -> void:

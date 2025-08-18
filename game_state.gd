@@ -7,10 +7,31 @@ var item_database = {
 	"badge_of_courage": { "name": "勇气徽章" }
 }
 
+# 新增：任务数据库，定义所有任务的元数据
+var quest_database: Dictionary = {
+	"chief_forest_quest": {
+		"title": "调查东边的森林",
+		"description": "村长让你去调查一下村子东边森林里的异常情况。"
+	}
+}
+
 # 2. 玩家的背包现在存储的是道具ID，而不是名称
 #var inventory = ["sword_rust", "bread"]
 var inventory = ["sword_rust", "bread", "badge_of_courage"]
 var completed_quests = ["新手村报道"]
+
+# 新增：玩家任务列表，存储玩家已接取或已完成的任务
+# Key是任务ID, Value是任务状态 (e.g., "active", "completed")
+var player_quests: Dictionary = {}
+
+# 新增：用于存储NPC好感度的字典
+# Key是NPC的唯一ID，Value是好感度数值
+var npc_affinities: Dictionary = {
+	"village_chief": 50 # 比如村长，初始好感度是50
+}
+
+# 新增一个信号，当任务列表更新时，广播出去
+signal quest_log_updated
 
 func _ready() -> void:
 	# 连接信号的代码保持不变
@@ -79,3 +100,23 @@ func _on_action_triggered(action_data: Dictionary) -> void:
 			# 未来可以轻松扩展，比如让AudioManager来处理
 			var sound_id = action_data.get("id", "")
 			print("[GameState] Action 'play_sound' triggered for sound: ", sound_id)
+
+# 新增：一个用来修改好感度的函数
+func change_npc_affinity(npc_id: String, value: int) -> void:
+	if not npc_affinities.has(npc_id):
+		npc_affinities[npc_id] = 0 # 如果是新NPC，从0开始
+	
+	npc_affinities[npc_id] += value
+	print("Affinity with %s changed to: %s" % [npc_id, npc_affinities[npc_id]])
+
+func handle_change_affinity_action(action: Dictionary) -> void:
+	var npc_id : String = action.get("npc_id", "")
+	var value : int = action.get("value", 0)
+	change_npc_affinity(npc_id, value)
+
+# 新增：一个用来开启任务的函数
+func start_quest(quest_id: String) -> void:
+	if quest_database.has(quest_id) and not player_quests.has(quest_id):
+		player_quests[quest_id] = "active"
+		print("Quest started: ", quest_database[quest_id]["title"])
+		quest_log_updated.emit() # 发出信号，通知UI刷新
