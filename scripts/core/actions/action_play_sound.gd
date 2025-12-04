@@ -10,8 +10,9 @@ func init_from_data(action_data: Dictionary) -> void:
 	# action_instance.audio_stream = AudioManager.get_sound_resource(sound_id)
 	# 暂时先跳过，后续课程实现
 
-func execute(_initiator: Node, target: Node) -> void:
-	if audio_stream == null: return
+func _execute_internal(_initiator: Node, target: Node) -> bool:
+	if audio_stream == null:
+		return false
 	
 	# 在目标位置生成一个临时的音频播放器
 	# 这里可以使用我们未来封装的 AudioManager，现在先简单实现
@@ -23,3 +24,4 @@ func execute(_initiator: Node, target: Node) -> void:
 	target.add_child(sfx) 
 	sfx.finished.connect(sfx.queue_free) # 播完自毁
 	sfx.play()
+	return true

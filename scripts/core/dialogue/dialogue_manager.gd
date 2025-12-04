@@ -2,6 +2,7 @@ extends Node
 
 # 【重构】从Dictionary改为Resource图
 var dialogue_graph: Dictionary[String, DialogueNode] = {}
+var loaded_files: Array[String] = []  # 已加载的文件列表（避免重复加载）
 var current_node: DialogueNode = null  # 当前对话节点
 var is_active: bool = false 			## 标记对话系统是否正在运行
 
@@ -16,13 +17,87 @@ signal choices_updated(choices: Array)							## 选项更新信号
 
 ## 加载并解析指定的JSON文件
 ## [param path] JSON文件的路径
-func load_dialogue_file(path: String) -> void:
-	var dialogues : Dictionary = dialogue_parser.parse_dialogue_file(path)
-	dialogue_graph.merge(dialogues, true)
-	if dialogue_graph.is_empty():
+## [param merge] 是否合并到现有对话图（默认true，false会替换）
+func load_dialogue_file(path: String, merge: bool = true) -> void:
+	# 检查是否已加载
+	if loaded_files.has(path):
+		push_warning("DialogueManager: 文件已加载 '%s'，跳过" % path)
+		return
+	
+	var dialogues: Dictionary = dialogue_parser.parse_dialogue_file(path)
+	
+	if dialogues.is_empty():
 		push_error("DialogueManager: 对话文件加载失败 '%s'" % path)
+		return
+	
+	if merge:
+		# 合并到现有对话图（如果节点ID重复，会覆盖）
+		dialogue_graph.merge(dialogues, true)
 	else:
-		print("DialogueManager: 对话文件加载成功，共 %d 个节点" % dialogue_graph.size())
+		# 替换现有对话图
+		dialogue_graph = dialogues
+		loaded_files.clear()
+	
+	loaded_files.append(path)
+	print("DialogueManager: 对话文件加载成功 '%s'，共 %d 个节点（总计 %d 个节点）" % [path, dialogues.size(), dialogue_graph.size()])
+
+## 卸载指定的对话文件
+## [param path] JSON文件的路径
+func unload_dialogue_file(path: String) -> void:
+	if not loaded_files.has(path):
+		push_warning("DialogueManager: 文件未加载 '%s'" % path)
+		return
+	
+	# 重新加载文件以获取节点ID列表
+	var temp_dialogues = dialogue_parser.parse_dialogue_file(path)
+	
+	# 从对话图中移除这些节点
+	for node_id in temp_dialogues:
+		if dialogue_graph.has(node_id):
+			dialogue_graph.erase(node_id)
+	
+	loaded_files.erase(path)
+	print("DialogueManager: 对话文件已卸载 '%s'，剩余 %d 个节点" % [path, dialogue_graph.size()])
+
+## 清空所有对话数据
+func clear_all_dialogues() -> void:
+	dialogue_graph.clear()
+	loaded_files.clear()
+	print("DialogueManager: 所有对话数据已清空")
+
+## 重新加载所有文件
+func reload_all_files() -> void:
+	var files_to_reload = loaded_files.duplicate()
+	clear_all_dialogues()
+	
+	for file_path in files_to_reload:
+		load_dialogue_file(file_path, true)
+
+## 按需加载对话文件（如果节点不存在）
+## [param node_id] 对话节点ID
+## [param search_paths] 要搜索的文件路径列表（可选）
+## [return] 是否成功加载
+func load_dialogue_if_needed(node_id: String, search_paths: Array[String] = []) -> bool:
+	# 如果节点已存在，不需要加载
+	if dialogue_graph.has(node_id):
+		return true
+	
+	# 如果没有提供搜索路径，使用默认路径
+	if search_paths.is_empty():
+		search_paths = [
+			"res://data/dialogues/main_dialogue.json",
+			"res://data/dialogues/village_dialogue.json",
+			"res://data/dialogues/forest_dialogue.json",
+		]
+	
+	# 尝试从文件加载
+	for file_path in search_paths:
+		if ResourceLoader.exists(file_path):
+			load_dialogue_file(file_path, true)
+			if dialogue_graph.has(node_id):
+				return true
+	
+	return false
 
 ## 提供公开的注册函数（“插座”），让外部系统可以把“检查器”“插”进来
 func register_condition(condition_type: String, condition: GameCondition) -> void:

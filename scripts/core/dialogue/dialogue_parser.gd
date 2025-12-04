@@ -50,16 +50,34 @@ func _parse_node(node_id: String, node_data: Dictionary) -> DialogueNode:
 			if keys.size() > 0:
 				node.character_key = character[keys[0]]
 	
-	# 解析文本
+	# 解析文本（支持单个、数组或多语言格式）
 	if node_data.has("text"):
 		var text = node_data["text"]
 		if text is String:
+			# 单个文本
 			node.text_key = text
+		elif text is Array:
+			# 文本数组（随机选择）
+			for text_item in text:
+				if text_item is String:
+					node.text_keys.append(text_item)
+				elif text_item is Dictionary:
+					# 多语言格式的数组项
+					var keys = text_item.keys()
+					if keys.size() > 0:
+						node.text_keys.append(text_item[keys[0]])
 		elif text is Dictionary:
-			# 多语言格式
+			# 多语言格式（单个）
 			var keys = text.keys()
 			if keys.size() > 0:
 				node.text_key = text[keys[0]]
+		
+		# 解析文本权重（可选）
+		if node_data.has("text_weights") and node_data["text_weights"] is Array:
+			var weights = node_data["text_weights"]
+			for weight in weights:
+				if weight is float or weight is int:
+					node.text_weights.append(float(weight))
 	
 	# 解析选项
 	if node_data.has("choices"):
