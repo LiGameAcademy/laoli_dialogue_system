@@ -23,7 +23,7 @@ func emit_game_event(type: String, data: Dictionary) -> void:
 ## [param item_id] Item的唯一ID
 ## [param item_resource] Item资源
 func register_item_resource(item_id: String, item_resource: Item) -> void:
-	if not is_instance_valid(item_resource) or item_resource.id.is_empty():
+	if not is_instance_valid(item_resource) or item_resource.name.is_empty():
 		push_error("警告：Item资源为空 -> ", item_resource)
 		return
 	if item_database.has(item_id):

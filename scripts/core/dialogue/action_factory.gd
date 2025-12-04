@@ -39,6 +39,6 @@ func create_actions_from_data(actions_data: Array) -> Array[GameAction]:
 
 func register_action(action_type: String, action: GameAction) -> void:
 	if action_type_map.has(action_type):
-		push_error("ActionFactory: 动作类型 '%s' 已存在" % action.type)
+		push_error("ActionFactory: 动作类型 '%s' 已存在" % action_type)
 		return
 	action_type_map[action_type] = action
