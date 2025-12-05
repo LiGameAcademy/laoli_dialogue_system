@@ -15,8 +15,13 @@ class_name DialogueOption
 @export var display_condition_prefix: bool = false  ## 是否显示条件前缀（如"需要【钥匙】"）
 
 # --- 便捷方法 ---
+## 获取本地化后的选项文本（支持变量替换）
 func get_text() -> String:
-	return tr(text_key) if not text_key.is_empty() else ""
+	var base_text = tr(text_key) if not text_key.is_empty() else ""
+	if VariableManager.parser == null:
+		push_error("DialogueOption: VariableManager.parser 未初始化")
+		return base_text
+	return VariableManager.parser.parse_text(base_text)
 
 # --- 检查选项是否可用 ---
 func is_available(activator: Node) -> bool:

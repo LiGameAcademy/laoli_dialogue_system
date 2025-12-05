@@ -16,6 +16,10 @@ var npc_affinities: Dictionary[String, int] = {}
 
 signal game_event_occurred(type: String, data: Dictionary)
 
+func _ready() -> void:
+	# 注册变量提供者
+	VariableManager.register_variable_provider(_provide_game_variables)
+
 func emit_game_event(type: String, data: Dictionary) -> void:
 	game_event_occurred.emit(type, data)
 
@@ -91,3 +95,43 @@ func start_quest(quest_id: String) -> void:
 		push_error("警告：任务实例不存在 -> ", quest_id)
 		return
 	QuestManager.accept_quest(quest)
+
+## 提供游戏变量
+## [return] 游戏变量字典
+func _provide_game_variables() -> Dictionary:
+	var player = get_tree().get_first_node_in_group("Player")
+	
+	var vars = {
+		"player_name": _get_player_name(),
+		"player_level": _get_player_level(),
+		"gold_amount": _get_gold_amount(),
+		"quest_count": _get_quest_count(),
+		"completed_quest_count": _get_completed_quest_count(),
+	}
+	
+	return vars
+
+## 获取玩家名称
+func _get_player_name() -> String:
+	# 从玩家数据中获取，或使用默认值
+	return "冒险者"
+
+## 获取玩家等级
+func _get_player_level() -> int:
+	var player = get_tree().get_first_node_in_group("Player")
+	if player and player.has_method("get_level"):
+		return player.get_level()
+	return 1
+
+## 获取金币数量
+func _get_gold_amount() -> int:
+	# 从背包或玩家数据中获取
+	return 0
+
+## 获取任务数量
+func _get_quest_count() -> int:
+	return QuestManager.active_quests.size()
+
+## 获取已完成任务数量
+func _get_completed_quest_count() -> int:
+	return QuestManager.completed_quest_ids.size()

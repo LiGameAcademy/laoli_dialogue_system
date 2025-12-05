@@ -28,6 +28,7 @@ func _ready() -> void:
 	# 核心：连接全局事件总线
 	# 只要游戏里发生任何大事小情，QuestManager 都要知道
 	GameState.game_event_occurred.connect(_on_game_event)
+	VariableManager.register_variable_provider(_provide_quest_variables)
 
 # --- 核心：事件分发 ---
 func _on_game_event(type: String, data: Dictionary) -> void:
@@ -148,3 +149,30 @@ func _on_quest_completed(quest: Quest) -> void:
 	
 	# 注意：此时任务仍在 active_quests 中，状态为 READY_TO_TURN_IN
 	# 只有当玩家交付任务后，才会移出 active_quests 并加入 completed_quest_ids
+
+## 提供任务变量
+## [return] 任务变量字典
+func _provide_quest_variables() -> Dictionary:
+	var vars = {}
+	
+	# 为每个活跃任务创建变量
+	for quest in active_quests:
+		var quest_var_name = "quest_" + quest.id + "_status"
+		var status = get_quest_status(quest.id)
+		vars[quest_var_name] = _quest_status_to_string(status)
+	
+	return vars
+
+## 将任务状态转换为字符串
+func _quest_status_to_string(status: QuestStatus) -> String:
+	match status:
+		QuestStatus.CAN_ACCEPT:
+			return "可接取"
+		QuestStatus.IN_PROGRESS:
+			return "进行中"
+		QuestStatus.READY_TO_TURN_IN:
+			return "可交付"
+		QuestStatus.FINISHED:
+			return "已完成"
+		_:
+			return "未知"

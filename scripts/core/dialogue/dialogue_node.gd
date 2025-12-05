@@ -30,13 +30,21 @@ func get_character_name() -> String:
 ## 获取本地化后的文本（支持随机选择）
 ## 优先使用随机文本数组，如果没有则使用单个文本
 func get_text() -> String:
-	# 优先使用随机文本数组
-	if not text_keys.is_empty():
-		var selected_key = _select_random_text()
-		return tr(selected_key) if not selected_key.is_empty() else ""
+	var base_text = ""
 	
-	# 回退到单个文本
-	return tr(text_key) if not text_key.is_empty() else ""
+	# 获取基础文本
+	if not text_keys.is_empty():
+		# 使用随机选择逻辑（支持加权随机和非重复选择）
+		var selected_key = _select_random_text()
+		base_text = tr(selected_key) if not selected_key.is_empty() else ""
+	else:
+		base_text = tr(text_key) if not text_key.is_empty() else ""
+	
+	# 应用变量替换
+	if VariableManager.parser == null:
+		push_error("DialogueNode: VariableManager.parser 未初始化")
+		return base_text
+	return VariableManager.parser.parse_text(base_text)
 
 ## 随机选择文本（支持加权随机和非重复选择）
 ## [return] 选中的文本键
