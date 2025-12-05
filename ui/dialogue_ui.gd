@@ -122,6 +122,9 @@ func _on_text_updated(character_name: String, text: String) -> void:
 	# 清空上一轮的选项
 	for child in choices_container.get_children():
 		child.queue_free()
+	
+	# 没有选项时隐藏选项容器（节省空间）
+	choices_container.hide()
 
 # 当收到"dialogue_finished"信号时，这个函数会被自动调用
 func _on_dialogue_finished() -> void:
@@ -129,18 +132,32 @@ func _on_dialogue_finished() -> void:
 	# 同样清空可能残留的选项
 	for child in choices_container.get_children():
 		child.queue_free()
+	# 隐藏选项容器
+	choices_container.hide()
 
 # 当收到选项数据时，动态创建按钮
 func _on_choices_updated(choices: Array) -> void:
-	for choice_data in choices:
-		var button = _create_choice_button(choice_data)
-		choices_container.add_child(button)
+	# 清空现有选项
+	for child in choices_container.get_children():
+		child.queue_free()
+	
+	# 如果有选项，显示容器并创建按钮
+	if choices.size() > 0:
+		choices_container.show()
+		for choice_data in choices:
+			var button = _create_choice_button(choice_data)
+			choices_container.add_child(button)
+	else:
+		# 没有选项时隐藏容器（节省空间）
+		choices_container.hide()
 
 # 当玩家点击某个选项按钮时
 func _on_choice_pressed(choice_data: Dictionary) -> void:
 	# 清空所有选项按钮，防止重复点击
 	for child in choices_container.get_children():
 		child.queue_free()
+	# 隐藏选项容器
+	choices_container.hide()
 	# 通知 DialogueManager，玩家做出了选择
 	DialogueManager.make_choice(choice_data)
 
