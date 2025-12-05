@@ -1,10 +1,16 @@
 extends Node
 
+const CLEANUP_INTERVAL = 60.0  # 每60秒清理一次
+
 # 【重构】从Dictionary改为Resource图
 var dialogue_graph: Dictionary[String, DialogueNode] = {}
 var loaded_files: Array[String] = []  # 已加载的文件列表（避免重复加载）
+var dialogue_file_cache: Dictionary[String, Dictionary] = {}  # 对话文件缓存（Key: 文件路径, Value: 节点字典）
 var current_node: DialogueNode = null  # 当前对话节点
 var is_active: bool = false 			## 标记对话系统是否正在运行
+
+## 内存管理相关
+var cleanup_timer: float = 0.0
 
 var action_factory: ActionFactory = ActionFactory.new()
 var condition_factory: ConditionFactory = ConditionFactory.new()
@@ -16,10 +22,20 @@ var player_getter: Callable
 ## 对话存档管理器（属性单例）
 var save_manager: DialogueSaveManager = DialogueSaveManager.new()
 
+## 性能分析器（属性，不污染全局命名空间）
+var performance_profiler: PerformanceProfiler = PerformanceProfiler.new()
+
 signal text_updated(character_name: String, text: String)		## 文本更新信号
 signal dialogue_started											## 对话开始信号
 signal dialogue_finished										## 对话结束信号
 signal choices_updated(choices: Array)							## 选项更新信号
+
+## 定期清理未使用的节点（内存管理）
+func _process(delta: float) -> void:
+	cleanup_timer += delta
+	if cleanup_timer >= CLEANUP_INTERVAL:
+		release_unused_nodes()
+		cleanup_timer = 0.0
 
 ## 注册玩家节点获取函数（由业务层调用）
 ## [param getter] 获取函数，返回 Node 或 null
@@ -31,20 +47,44 @@ func register_player_getter(getter: Callable) -> void:
 func register_quest_resource_getter_for_save(getter: Callable) -> void:
 	save_manager.register_quest_resource_getter(getter)
 
-## 加载并解析指定的JSON文件
+## 加载并解析指定的JSON文件（带缓存）
 ## [param path] JSON文件的路径
 ## [param merge] 是否合并到现有对话图（默认true，false会替换）
 func load_dialogue_file(path: String, merge: bool = true) -> void:
-	# 检查是否已加载
-	if loaded_files.has(path):
-		push_warning("DialogueManager: 文件已加载 '%s'，跳过" % path)
+	# 性能分析
+	performance_profiler.start_profiling("load_dialogue_file")
+	
+	# 检查缓存
+	if dialogue_file_cache.has(path):
+		var cached_dialogues = dialogue_file_cache[path]
+		if merge:
+			dialogue_graph.merge(cached_dialogues, true)
+		else:
+			dialogue_graph = cached_dialogues
+			loaded_files.clear()
+		
+		if not loaded_files.has(path):
+			loaded_files.append(path)
+		
+		print("DialogueManager: 从缓存加载对话文件 '%s'，共 %d 个节点" % [path, cached_dialogues.size()])
+		
+		# 结束性能分析
+		performance_profiler.end_profiling("load_dialogue_file")
 		return
 	
+	# 检查是否已加载（但不在缓存中，可能是之前加载过但缓存被清空）
+	if loaded_files.has(path):
+		push_warning("DialogueManager: 文件已加载 '%s'，但缓存不存在，重新加载" % path)
+	
+	# 解析文件
 	var dialogues: Dictionary = dialogue_parser.parse_dialogue_file(path)
 	
 	if dialogues.is_empty():
 		push_error("DialogueManager: 对话文件加载失败 '%s'" % path)
 		return
+	
+	# 添加到缓存
+	dialogue_file_cache[path] = dialogues
 	
 	if merge:
 		# 合并到现有对话图（如果节点ID重复，会覆盖）
@@ -54,8 +94,13 @@ func load_dialogue_file(path: String, merge: bool = true) -> void:
 		dialogue_graph = dialogues
 		loaded_files.clear()
 	
-	loaded_files.append(path)
+	if not loaded_files.has(path):
+		loaded_files.append(path)
+	
 	print("DialogueManager: 对话文件加载成功 '%s'，共 %d 个节点（总计 %d 个节点）" % [path, dialogues.size(), dialogue_graph.size()])
+	
+	# 结束性能分析
+	performance_profiler.end_profiling("load_dialogue_file")
 
 ## 卸载指定的对话文件
 ## [param path] JSON文件的路径
@@ -64,14 +109,24 @@ func unload_dialogue_file(path: String) -> void:
 		push_warning("DialogueManager: 文件未加载 '%s'" % path)
 		return
 	
-	# 重新加载文件以获取节点ID列表
-	var temp_dialogues = dialogue_parser.parse_dialogue_file(path)
+	# 从缓存中获取节点ID列表（如果缓存存在）
+	var node_ids_to_remove: Array[String] = []
+	if dialogue_file_cache.has(path):
+		for node_id in dialogue_file_cache[path]:
+			node_ids_to_remove.append(node_id)
+	else:
+		# 如果缓存不存在，重新加载文件以获取节点ID列表
+		var temp_dialogues = dialogue_parser.parse_dialogue_file(path)
+		for node_id in temp_dialogues:
+			node_ids_to_remove.append(node_id)
 	
 	# 从对话图中移除这些节点
-	for node_id in temp_dialogues:
+	for node_id in node_ids_to_remove:
 		if dialogue_graph.has(node_id):
 			dialogue_graph.erase(node_id)
 	
+	# 从缓存中移除
+	dialogue_file_cache.erase(path)
 	loaded_files.erase(path)
 	print("DialogueManager: 对话文件已卸载 '%s'，剩余 %d 个节点" % [path, dialogue_graph.size()])
 
@@ -79,6 +134,7 @@ func unload_dialogue_file(path: String) -> void:
 func clear_all_dialogues() -> void:
 	dialogue_graph.clear()
 	loaded_files.clear()
+	dialogue_file_cache.clear()
 	print("DialogueManager: 所有对话数据已清空")
 
 ## 重新加载所有文件
@@ -98,6 +154,16 @@ func load_dialogue_if_needed(node_id: String, search_paths: Array[String] = []) 
 	if dialogue_graph.has(node_id):
 		return true
 	
+	# 先尝试从缓存中查找
+	for file_path in dialogue_file_cache:
+		var cached_dialogues = dialogue_file_cache[file_path]
+		if cached_dialogues.has(node_id):
+			# 从缓存中恢复节点
+			dialogue_graph[node_id] = cached_dialogues[node_id]
+			if not loaded_files.has(file_path):
+				loaded_files.append(file_path)
+			return true
+	
 	# 如果没有提供搜索路径，使用默认路径
 	if search_paths.is_empty():
 		search_paths = [
@@ -114,6 +180,56 @@ func load_dialogue_if_needed(node_id: String, search_paths: Array[String] = []) 
 				return true
 	
 	return false
+
+## 异步加载对话文件（延迟到下一帧执行）
+## [param path] 文件路径
+## [param merge] 是否合并
+func load_dialogue_file_async(path: String, merge: bool = true) -> void:
+	call_deferred("load_dialogue_file", path, merge)
+
+## 后台预加载对话文件
+## [param paths] 文件路径数组
+func preload_dialogue_files_async(paths: Array[String]) -> void:
+	for path in paths:
+		call_deferred("load_dialogue_file", path, true)
+
+## 释放未使用的对话节点（内存管理）
+## [param keep_recent] 保留最近使用的节点数量（默认50）
+func release_unused_nodes(keep_recent: int = 50) -> void:
+	if dialogue_graph.size() <= keep_recent:
+		return
+	
+	# 收集要保留的节点ID
+	var nodes_to_keep: Array[String] = []
+	
+	# 保留当前节点及其相关节点
+	if current_node:
+		nodes_to_keep.append(current_node.node_id)
+		# 保留选项指向的节点
+		for option in current_node.options:
+			if not option.next_node_id.is_empty() and option.next_node_id != "END":
+				nodes_to_keep.append(option.next_node_id)
+	
+	# 如果保留的节点数量不足，从缓存中随机选择一些
+	if nodes_to_keep.size() < keep_recent:
+		var all_node_ids = dialogue_graph.keys()
+		var remaining = keep_recent - nodes_to_keep.size()
+		for i in range(min(remaining, all_node_ids.size())):
+			var random_id = all_node_ids[randi() % all_node_ids.size()]
+			if not nodes_to_keep.has(random_id):
+				nodes_to_keep.append(random_id)
+	
+	# 移除未使用的节点
+	var nodes_to_remove: Array[String] = []
+	for node_id in dialogue_graph:
+		if not nodes_to_keep.has(node_id):
+			nodes_to_remove.append(node_id)
+	
+	for node_id in nodes_to_remove:
+		dialogue_graph.erase(node_id)
+	
+	if nodes_to_remove.size() > 0:
+		print("DialogueManager: 已释放 %d 个未使用的对话节点，保留 %d 个节点" % [nodes_to_remove.size(), dialogue_graph.size()])
 
 ## 提供公开的注册函数（“插座”），让外部系统可以把“检查器”“插”进来
 func register_condition(condition_type: String, condition: GameCondition) -> void:

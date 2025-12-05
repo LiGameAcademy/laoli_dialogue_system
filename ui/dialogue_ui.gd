@@ -8,7 +8,9 @@ extends CanvasLayer
 @onready var choices_container: VBoxContainer = %ChoicesContainer
 @onready var dialogue_panel: Panel = %Panel
 @onready var typing_sound_player: AudioStreamPlayer = $TypingSoundPlayer
-@onready var read_indicator: Label = %ReadIndicator  # 已读标记（可选，如果场景中没有则忽略）
+
+## 已读标记（可选，如果场景中没有则忽略）
+var read_indicator: Label = null
 
 # 用于打字机效果的定时器
 var typing_timer: Timer
@@ -29,6 +31,10 @@ func _ready() -> void:
 	typing_timer = Timer.new()
 	add_child(typing_timer) # 必须把Timer添加到场景树中才能工作
 	typing_timer.timeout.connect(_on_typing_timer_timeout)
+
+	# 安全地获取已读标记节点（如果存在）
+	if has_node("%ReadIndicator"):
+		read_indicator = get_node("%ReadIndicator") as Label
 
 	# 默认隐藏自己
 	dialogue_panel.hide()

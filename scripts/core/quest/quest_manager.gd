@@ -32,15 +32,21 @@ var game_event_signal: Signal
 var quest_database_provider: Callable
 ## 任务资源获取函数（由业务层注册）
 var quest_resource_getter: Callable
+## 标记信号是否已连接（避免重复连接）
+var _game_event_signal_connected: bool = false
 
 ## 注册游戏事件信号（由业务层调用）
 ## [param signal_instance] 游戏事件信号
 func register_game_event_signal(signal_instance: Signal) -> void:
-	if game_event_signal != null:
-		push_warning("QuestManager: 游戏事件信号已注册，将被覆盖")
+	# 如果已经连接过，先断开之前的连接
+	if _game_event_signal_connected and game_event_signal:
+		game_event_signal.disconnect(_on_game_event)
+		_game_event_signal_connected = false
+	
 	game_event_signal = signal_instance
 	if game_event_signal:
 		game_event_signal.connect(_on_game_event)
+		_game_event_signal_connected = true
 
 ## 注册任务数据库查询函数（由业务层调用）
 ## [param provider] 查询函数，接收 quest_id: String，返回 bool

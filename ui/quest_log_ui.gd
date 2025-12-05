@@ -7,6 +7,11 @@ const QUEST_ENTRY = preload("uid://buxpglhrujy2")
 
 var quest_entries: Dictionary[Quest, QuestEntry] = {}
 
+## 批量更新队列
+var update_queue: Array[Quest] = []
+var update_timer: float = 0.0
+const UPDATE_INTERVAL = 0.1  # 每0.1秒批量更新一次
+
 func _ready() -> void:
 	# 核心：连接 QuestManager 的信号
 	QuestManager.quest_accepted.connect(_on_quest_accepted)
@@ -16,6 +21,38 @@ func _ready() -> void:
 	
 	# 初始化时刷新所有任务（用于显示已存在的任务）
 	refresh_all_quests()
+
+func _process(delta: float) -> void:
+	if update_queue.is_empty():
+		return
+	
+	update_timer += delta
+	if update_timer >= UPDATE_INTERVAL:
+		_process_update_queue()
+		update_timer = 0.0
+
+## 处理更新队列（批量更新，去重）
+func _process_update_queue() -> void:
+	if update_queue.is_empty():
+		return
+	
+	# 去重（使用字典）
+	var unique_quests: Dictionary[Quest, bool] = {}
+	for quest in update_queue:
+		unique_quests[quest] = true
+	
+	# 批量更新
+	for quest in unique_quests.keys():
+		_update_quest_entry(quest)
+	
+	# 清空队列
+	update_queue.clear()
+
+## 更新任务条目（实际更新逻辑）
+func _update_quest_entry(quest: Quest) -> void:
+	var entry: QuestEntry = quest_entries.get(quest, null)
+	if entry:
+		entry.update_display(_get_quest_text(quest), quest.description)
 
 func _get_quest_text(quest: Quest) -> String:
 	var txt = quest.title + " " + _get_quest_status_text(quest) + "\n"
@@ -54,9 +91,8 @@ func _on_quest_accepted(quest: Quest) -> void:
 	quest_entries[quest] = entry
 
 func _on_quest_updated(quest: Quest) -> void:
-	var entry : QuestEntry = quest_entries.get(quest, null)
-	if entry:
-		entry.update_display(_get_quest_text(quest), quest.description)
+	# 加入更新队列（批量更新）
+	update_queue.append(quest)
 
 func _on_quest_completed(quest: Quest) -> void:
 	var entry : QuestEntry = quest_entries.get(quest, null)

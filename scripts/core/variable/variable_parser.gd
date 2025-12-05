@@ -9,6 +9,12 @@ var variable_manager: VariableManager
 ## 条件变量解析器映射表（符合开闭原则：通过注册扩展功能）
 var conditional_resolvers: Dictionary[String, ConditionalVariableResolver] = {}
 
+## 预编译结果缓存（Key: 原始文本, Value: 预编译结果）
+var precompile_cache: Dictionary[String, Dictionary] = {}
+
+## 缓存大小限制
+const MAX_CACHE_SIZE = 200
+
 ## 初始化
 ## [param manager] 变量管理器实例
 func _init(manager: VariableManager) -> void:
@@ -20,25 +26,52 @@ func _init(manager: VariableManager) -> void:
 func register_conditional_resolver(condition_type: String, resolver: ConditionalVariableResolver) -> void:
 	conditional_resolvers[condition_type] = resolver
 
-## 解析并替换文本中的变量
+## 解析并替换文本中的变量（带预编译缓存）
 ## [param text] 包含变量的文本（如："你好，{player_name}！"）
 ## [return] 替换后的文本
 func parse_text(text: String) -> String:
 	if text.is_empty():
 		return text
 	
-	# 使用正则表达式查找所有变量
-	var regex = RegEx.new()
-	regex.compile("\\{([^}]+)\\}")
+	# 检查预编译缓存
+	if precompile_cache.has(text):
+		var precompiled = precompile_cache[text]
+		return _apply_precompiled(precompiled)
+	
+	# 预编译文本
+	var precompiled = precompile_text(text)
+	
+	# 添加到缓存（检查缓存大小）
+	if precompile_cache.size() >= MAX_CACHE_SIZE:
+		# 移除最旧的缓存（FIFO策略）
+		var oldest_key = precompile_cache.keys()[0]
+		precompile_cache.erase(oldest_key)
+	
+	precompile_cache[text] = precompiled
+	
+	# 应用预编译结果
+	return _apply_precompiled(precompiled)
+
+## 应用预编译结果
+## [param precompiled] 预编译结果字典
+## [return] 替换后的文本
+func _apply_precompiled(precompiled: Dictionary) -> String:
+	var text = precompiled.get("text", "")
+	var variables = precompiled.get("variables", [])
+	
+	if variables.is_empty():
+		return text
 	
 	var result = text
-	var matches = regex.search_all(text)
 	
 	# 从后往前替换（避免索引偏移问题）
-	for i in range(matches.size() - 1, -1, -1):
-		var match = matches[i]
-		var full_match = match.get_string(0)  # 完整匹配，如 "{player_name}"
-		var var_name = match.get_string(1)     # 变量名，如 "player_name"
+	for i in range(variables.size() - 1, -1, -1):
+		var var_info = variables[i]
+		var var_name = var_info.get("var_name", "")
+		var full_match = var_info.get("full_match", "")
+		
+		if full_match.is_empty():
+			continue
 		
 		# 获取变量值
 		var var_value = _get_variable_value(var_name)

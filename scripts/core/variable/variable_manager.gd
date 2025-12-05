@@ -21,6 +21,20 @@ func _ready() -> void:
 	# 注册默认的条件变量解析器
 	_register_default_resolvers()
 
+## 批量更新变量
+## [param updates] 变量更新字典（Key: 变量名, Value: 变量值）
+func batch_update_variables(updates: Dictionary) -> void:
+	for var_name in updates:
+		set_variable(var_name, updates[var_name])
+	
+	# 清空缓存（因为变量已更新）
+	variable_cache.clear()
+	cache_timestamp.clear()
+	
+	# 清空解析器的预编译缓存（因为变量值可能影响替换结果）
+	if parser:
+		parser.precompile_cache.clear()
+
 ## 注册变量提供者
 ## [param provider] 提供变量的函数（返回Dictionary[String, Variant]）
 func register_variable_provider(provider: Callable) -> void:
