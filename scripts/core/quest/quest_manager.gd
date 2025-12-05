@@ -24,10 +24,36 @@ signal quest_ready_to_turn_in(quest : Quest)  # 任务可以交付（新增）
 signal quest_turned_in(quest : Quest)  # 任务已交付（新增）
 signal quest_updated(quest : Quest) # 进度更新时（比如杀怪 1/5 -> 2/5）
 
+# --- 依赖注入（解耦业务层）---
+## 游戏事件信号（由业务层注册）
+var game_event_signal: Signal
+## 任务数据库查询函数（由业务层注册）
+var quest_database_provider: Callable
+## 任务资源获取函数（由业务层注册）
+var quest_resource_getter: Callable
+
+## 注册游戏事件信号（由业务层调用）
+## [param signal_instance] 游戏事件信号
+func register_game_event_signal(signal_instance: Signal) -> void:
+	if game_event_signal != null:
+		push_warning("QuestManager: 游戏事件信号已注册，将被覆盖")
+	game_event_signal = signal_instance
+	if game_event_signal:
+		game_event_signal.connect(_on_game_event)
+
+## 注册任务数据库查询函数（由业务层调用）
+## [param provider] 查询函数，接收 quest_id: String，返回 bool
+func register_quest_database_provider(provider: Callable) -> void:
+	quest_database_provider = provider
+
+## 注册任务资源获取函数（由业务层调用）
+## [param getter] 获取函数，接收 quest_id: String，返回 Quest 或 null
+func register_quest_resource_getter(getter: Callable) -> void:
+	quest_resource_getter = getter
+
 func _ready() -> void:
-	# 核心：连接全局事件总线
-	# 只要游戏里发生任何大事小情，QuestManager 都要知道
-	GameState.game_event_occurred.connect(_on_game_event)
+	# 注意：不再直接连接 GameState，改为通过 register_game_event_signal 注册
+	# 业务层需要在 _ready() 中调用：QuestManager.register_game_event_signal(GameState.game_event_occurred)
 	VariableManager.register_variable_provider(_provide_quest_variables)
 
 # --- 核心：事件分发 ---
@@ -40,7 +66,15 @@ func _on_game_event(type: String, data: Dictionary) -> void:
 			# 把事件传给任务，让任务自己去判断是否符合目标
 			quest.notify_event(type, data)
 
+## 手动触发游戏事件（用于测试或直接调用）
+## [param type] 事件类型
+## [param data] 事件数据
+func trigger_game_event(type: String, data: Dictionary) -> void:
+	_on_game_event(type, data)
+
 # --- 公共接口：接取任务 ---
+## 通过任务资源接取任务
+## [param quest_res] 任务资源
 func accept_quest(quest_res: Quest) -> void:
 	# 1. 检查是否已经接过或已完成
 	if has_quest(quest_res.id) or is_quest_completed(quest_res.id):
@@ -61,6 +95,27 @@ func accept_quest(quest_res: Quest) -> void:
 	active_quests.append(new_quest)
 	quest_accepted.emit(new_quest)
 	print("任务接取成功：", new_quest.title)
+
+## 通过任务ID接取任务（便捷方法）
+## [param quest_id] 任务ID
+## [return] 是否成功接取
+func accept_quest_by_id(quest_id: String) -> bool:
+	if quest_id.is_empty():
+		push_error("QuestManager: accept_quest_by_id quest_id为空")
+		return false
+	
+	# 通过注册的资源获取函数获取任务资源
+	if not quest_resource_getter.is_valid():
+		push_error("QuestManager: 未注册任务资源获取函数，无法接取任务 '%s'" % quest_id)
+		return false
+	
+	var quest_res = quest_resource_getter.call(quest_id)
+	if not quest_res:
+		push_error("QuestManager: 找不到任务资源 '%s'" % quest_id)
+		return false
+	
+	accept_quest(quest_res)
+	return true
 
 ## 交付任务（玩家与NPC对话后选择"交任务"）
 ## [param quest_id] 任务ID
@@ -130,8 +185,14 @@ func get_quest_status(quest_id: String) -> QuestStatus:
 					return QuestStatus.IN_PROGRESS
 	
 	# 任务未接取，检查是否在数据库中（可以接取）
-	if GameState.quest_database.has(quest_id):
-		return QuestStatus.CAN_ACCEPT
+	# 使用注册的查询函数，避免直接依赖业务层
+	if quest_database_provider.is_valid():
+		var has_in_database = quest_database_provider.call(quest_id)
+		if has_in_database:
+			return QuestStatus.CAN_ACCEPT
+	else:
+		# 如果没有注册查询函数，发出警告但继续执行
+		push_warning("QuestManager: 未注册任务数据库查询函数，无法判断任务是否可接取")
 	
 	return QuestStatus.UNAVAILABLE  # 默认返回不可接取
 

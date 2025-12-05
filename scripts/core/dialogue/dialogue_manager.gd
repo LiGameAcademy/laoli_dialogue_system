@@ -10,10 +10,18 @@ var action_factory: ActionFactory = ActionFactory.new()
 var condition_factory: ConditionFactory = ConditionFactory.new()
 var dialogue_parser: DialogueParser = DialogueParser.new(action_factory, condition_factory)
 
+## 玩家节点获取函数（由业务层注册，用于解耦）
+var player_getter: Callable
+
 signal text_updated(character_name: String, text: String)		## 文本更新信号
 signal dialogue_started											## 对话开始信号
 signal dialogue_finished										## 对话结束信号
 signal choices_updated(choices: Array)							## 选项更新信号
+
+## 注册玩家节点获取函数（由业务层调用）
+## [param getter] 获取函数，返回 Node 或 null
+func register_player_getter(getter: Callable) -> void:
+	player_getter = getter
 
 ## 加载并解析指定的JSON文件
 ## [param path] JSON文件的路径
@@ -140,7 +148,8 @@ func process_node(node_id: String) -> void:
 	text_updated.emit(current_node.get_character_name(), current_node.get_text())
 	
 	# 执行节点动作
-	var player = get_tree().get_first_node_in_group("Player")
+	# 使用注册的玩家获取函数，避免硬编码节点查找
+	var player = _get_player_node()
 	_execute_actions(current_node.actions, player)
 	
 	# 处理选项或下一节点
@@ -198,6 +207,16 @@ func _execute_actions(actions: Array[GameAction], activator: Node) -> void:
 			# 为了兼容旧系统，仍然发出action_triggered信号
 			# 但我们可以从Resource中提取信息（如果需要）
 			# 这里暂时跳过，因为新系统直接执行GameAction
+
+## 获取玩家节点（使用注册的获取函数，避免硬编码）
+## [return] 玩家节点或 null
+func _get_player_node() -> Node:
+	if player_getter.is_valid():
+		return player_getter.call()
+	else:
+		# 如果没有注册获取函数，回退到默认方式（向后兼容）
+		push_warning("DialogueManager: 未注册玩家获取函数，使用默认方式查找")
+		return get_tree().get_first_node_in_group("Player")
 
 ## 处理对话结束
 func _end_dialogue() -> void:

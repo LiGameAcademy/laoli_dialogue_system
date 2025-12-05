@@ -11,6 +11,8 @@ func _execute_internal(initiator: Node, _target: Node) -> bool:
 		push_error("ActionStartQuest: quest_id为空")
 		return false
 	
-	GameState.start_quest(quest_id)
-	print("任务接取：", quest_id)
-	return true
+	# 直接调用 QuestManager 的方法（QuestManager 是插件的一部分）
+	var success = QuestManager.accept_quest_by_id(quest_id)
+	if success:
+		print("任务接取：", quest_id)
+	return success
