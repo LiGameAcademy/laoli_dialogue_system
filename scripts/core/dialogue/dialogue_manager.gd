@@ -13,6 +13,9 @@ var dialogue_parser: DialogueParser = DialogueParser.new(action_factory, conditi
 ## 玩家节点获取函数（由业务层注册，用于解耦）
 var player_getter: Callable
 
+## 对话存档管理器（属性单例）
+var save_manager: DialogueSaveManager = DialogueSaveManager.new()
+
 signal text_updated(character_name: String, text: String)		## 文本更新信号
 signal dialogue_started											## 对话开始信号
 signal dialogue_finished										## 对话结束信号
@@ -22,6 +25,11 @@ signal choices_updated(choices: Array)							## 选项更新信号
 ## [param getter] 获取函数，返回 Node 或 null
 func register_player_getter(getter: Callable) -> void:
 	player_getter = getter
+
+## 注册任务资源获取函数（由业务层调用，用于存档系统）
+## [param getter] 获取函数，接收 quest_id: String，返回 Quest 资源
+func register_quest_resource_getter_for_save(getter: Callable) -> void:
+	save_manager.register_quest_resource_getter(getter)
 
 ## 加载并解析指定的JSON文件
 ## [param path] JSON文件的路径
@@ -144,8 +152,20 @@ func process_node(node_id: String) -> void:
 
 	current_node = dialogue_graph[node_id]
 
+	# 获取本地化文本
+	var character_name = current_node.get_character_name()
+	var text = current_node.get_text()
+	
+	# 记录对话历史
+	DialogueHistoryManager.add_entry(
+		node_id,
+		character_name,
+		text,
+		_get_choices_texts(current_node)
+	)
+	
 	# 发出文本更新信号
-	text_updated.emit(current_node.get_character_name(), current_node.get_text())
+	text_updated.emit(character_name, text)
 	
 	# 执行节点动作
 	# 使用注册的玩家获取函数，避免硬编码节点查找
@@ -177,6 +197,11 @@ func process_node(node_id: String) -> void:
 ## 供UI调用，告诉我们玩家做了哪个选择
 ## [param choice_data] 玩家选择的选项数据
 func make_choice(choice_data: Dictionary) -> void:
+	# 记录选择的选项
+	if current_node:
+		var choice_text = choice_data.get("text", "")
+		DialogueHistoryManager.record_choice(current_node.node_id, choice_text)
+	
 	# 如果choice_data包含option_resource，使用它
 	if choice_data.has("option_resource"):
 		var option: DialogueOption = choice_data["option_resource"]
@@ -217,6 +242,18 @@ func _get_player_node() -> Node:
 		# 如果没有注册获取函数，回退到默认方式（向后兼容）
 		push_warning("DialogueManager: 未注册玩家获取函数，使用默认方式查找")
 		return get_tree().get_first_node_in_group("Player")
+
+## 获取选项文本列表
+## [param node] 对话节点
+## [return] 选项文本数组
+func _get_choices_texts(node: DialogueNode) -> Array[String]:
+	var texts: Array[String] = []
+	if node.has_choices():
+		var player = _get_player_node()
+		var available_options = node.get_available_options(player)
+		for option in available_options:
+			texts.append(option.get_text())
+	return texts
 
 ## 处理对话结束
 func _end_dialogue() -> void:

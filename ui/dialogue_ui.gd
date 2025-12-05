@@ -8,6 +8,7 @@ extends CanvasLayer
 @onready var choices_container: VBoxContainer = %ChoicesContainer
 @onready var dialogue_panel: Panel = %Panel
 @onready var typing_sound_player: AudioStreamPlayer = $TypingSoundPlayer
+@onready var read_indicator: Label = %ReadIndicator  # 已读标记（可选，如果场景中没有则忽略）
 
 # 用于打字机效果的定时器
 var typing_timer: Timer
@@ -118,6 +119,16 @@ func _on_text_updated(character_name: String, text: String) -> void:
 	if not text.is_empty():
 		# 根据速度和文本长度，计算出定时器的等待时间
 		typing_timer.start(1.0 / typing_speed)
+	
+	# 检查是否已读
+	var current_node_id = DialogueManager.current_node.node_id if DialogueManager.current_node else ""
+	if current_node_id and DialogueHistoryManager.is_node_read(current_node_id):
+		if is_instance_valid(read_indicator):
+			read_indicator.text = "已读"
+			read_indicator.visible = true
+	else:
+		if is_instance_valid(read_indicator):
+			read_indicator.visible = false
 	
 	# 清空上一轮的选项
 	for child in choices_container.get_children():
