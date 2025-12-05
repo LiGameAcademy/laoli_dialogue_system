@@ -23,6 +23,7 @@ signal quest_completed(quest : Quest)  # 任务完成（所有目标达成，但
 signal quest_ready_to_turn_in(quest : Quest)  # 任务可以交付（新增）
 signal quest_turned_in(quest : Quest)  # 任务已交付（新增）
 signal quest_updated(quest : Quest) # 进度更新时（比如杀怪 1/5 -> 2/5）
+signal quests_loaded()  # 任务加载完成（用于存档读档后刷新UI）
 
 # --- 依赖注入（解耦业务层）---
 ## 游戏事件信号（由业务层注册）

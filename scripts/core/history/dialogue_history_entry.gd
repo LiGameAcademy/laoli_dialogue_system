@@ -46,6 +46,13 @@ func deserialize(data: Dictionary) -> void:
 	dialogue_text = data.get("dialogue_text", "")
 	timestamp = data.get("timestamp", 0.0)
 	is_read = data.get("is_read", false)
-	choices = data.get("choices", [])
+	
+	# 处理协变数组问题：手动转换 Array 为 Array[String]
+	var choices_data = data.get("choices", [])
+	choices.clear()
+	if choices_data is Array:
+		for item in choices_data:
+			if item is String:
+				choices.append(item)
+	
 	selected_choice = data.get("selected_choice", "")
-

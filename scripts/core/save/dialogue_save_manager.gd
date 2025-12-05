@@ -59,8 +59,13 @@ func load_dialogue_history() -> bool:
 		entry.deserialize(entry_data)
 		DialogueHistoryManager.history.append(entry)
 	
-	# 恢复已读节点
-	var read_nodes = history_data.get("read_nodes", [])
+	# 恢复已读节点（处理协变数组问题）
+	var read_nodes_data = history_data.get("read_nodes", [])
+	var read_nodes: Array[String] = []
+	if read_nodes_data is Array:
+		for item in read_nodes_data:
+			if item is String:
+				read_nodes.append(item)
 	DialogueHistoryManager.set_read_nodes(read_nodes)
 	
 	print("对话历史已加载：%d 条记录" % DialogueHistoryManager.history.size())
@@ -164,8 +169,16 @@ func _deserialize_quest_data(data: Dictionary) -> void:
 		
 		QuestManager.active_quests.append(quest_instance)
 	
-	# 恢复已完成任务
-	QuestManager.completed_quest_ids = data.get("completed_quest_ids", [])
+	# 恢复已完成任务（处理协变数组问题）
+	var completed_quest_ids_data = data.get("completed_quest_ids", [])
+	QuestManager.completed_quest_ids.clear()
+	if completed_quest_ids_data is Array:
+		for item in completed_quest_ids_data:
+			if item is String:
+				QuestManager.completed_quest_ids.append(item)
+	
+	# 发出任务加载完成信号（UI层会监听此信号并自动更新）
+	QuestManager.quests_loaded.emit()
 
 ## 反序列化单个任务
 ## [param quest] 任务实例

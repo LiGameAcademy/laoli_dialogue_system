@@ -35,3 +35,14 @@ func _update_progress(amount: int) -> void:
 func finish() -> void:
 	is_completed = true
 	completed.emit(description)
+
+# 序列化支持（重写基类方法，保存当前数量）
+func serialize() -> Dictionary:
+	var base_data = super()
+	base_data["current_amount"] = current_amount
+	return base_data
+
+# 反序列化支持（重写基类方法，恢复当前数量）
+func deserialize(data: Dictionary) -> void:
+	super(data)
+	current_amount = data.get("current_amount", 0)
