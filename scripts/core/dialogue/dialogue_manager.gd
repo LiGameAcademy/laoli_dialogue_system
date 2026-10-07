@@ -1,5 +1,13 @@
 extends Node
 
+enum DialogueEndReason { COMPLETED, CANCELED, FAILED }
+signal dialogue_session_started(session_id: int)
+signal dialogue_session_finished(session_id: int, reason: DialogueEndReason)
+var _session_id: int = -1
+var _next_session_id: int = 0
+var _initiator: Node
+
+
 const CLEANUP_INTERVAL = 60.0  # 每60秒清理一次
 
 # 【重构】从Dictionary改为Resource图
@@ -30,8 +38,13 @@ signal dialogue_started											## 对话开始信号
 signal dialogue_finished										## 对话结束信号
 signal choices_updated(choices: Array)							## 选项更新信号
 
+func _ready() -> void:
+	add_child(performance_profiler)
+
 ## 定期清理未使用的节点（内存管理）
 func _process(delta: float) -> void:
+	if is_active:
+		return
 	cleanup_timer += delta
 	if cleanup_timer >= CLEANUP_INTERVAL:
 		release_unused_nodes()
@@ -56,11 +69,11 @@ func load_dialogue_file(path: String, merge: bool = true) -> void:
 	
 	# 检查缓存
 	if dialogue_file_cache.has(path):
-		var cached_dialogues = dialogue_file_cache[path]
+		var cached_dialogues: Dictionary = dialogue_file_cache[path]
 		if merge:
 			dialogue_graph.merge(cached_dialogues, true)
 		else:
-			dialogue_graph = cached_dialogues
+			dialogue_graph.assign(cached_dialogues)
 			loaded_files.clear()
 		
 		if not loaded_files.has(path):
@@ -91,7 +104,7 @@ func load_dialogue_file(path: String, merge: bool = true) -> void:
 		dialogue_graph.merge(dialogues, true)
 	else:
 		# 替换现有对话图
-		dialogue_graph = dialogues
+		dialogue_graph.assign(dialogues)
 		loaded_files.clear()
 	
 	if not loaded_files.has(path):
@@ -112,16 +125,16 @@ func unload_dialogue_file(path: String) -> void:
 	# 从缓存中获取节点ID列表（如果缓存存在）
 	var node_ids_to_remove: Array[String] = []
 	if dialogue_file_cache.has(path):
-		for node_id in dialogue_file_cache[path]:
+		for node_id: String in dialogue_file_cache[path]:
 			node_ids_to_remove.append(node_id)
 	else:
 		# 如果缓存不存在，重新加载文件以获取节点ID列表
-		var temp_dialogues = dialogue_parser.parse_dialogue_file(path)
-		for node_id in temp_dialogues:
+		var temp_dialogues: Dictionary = dialogue_parser.parse_dialogue_file(path)
+		for node_id: String in temp_dialogues:
 			node_ids_to_remove.append(node_id)
 	
 	# 从对话图中移除这些节点
-	for node_id in node_ids_to_remove:
+	for node_id: String in node_ids_to_remove:
 		if dialogue_graph.has(node_id):
 			dialogue_graph.erase(node_id)
 	
@@ -132,6 +145,7 @@ func unload_dialogue_file(path: String) -> void:
 
 ## 清空所有对话数据
 func clear_all_dialogues() -> void:
+	_end_dialogue(DialogueEndReason.CANCELED)
 	dialogue_graph.clear()
 	loaded_files.clear()
 	dialogue_file_cache.clear()
@@ -139,10 +153,10 @@ func clear_all_dialogues() -> void:
 
 ## 重新加载所有文件
 func reload_all_files() -> void:
-	var files_to_reload = loaded_files.duplicate()
+	var files_to_reload: Array[String] = loaded_files.duplicate()
 	clear_all_dialogues()
 	
-	for file_path in files_to_reload:
+	for file_path: String in files_to_reload:
 		load_dialogue_file(file_path, true)
 
 ## 按需加载对话文件（如果节点不存在）
@@ -155,8 +169,8 @@ func load_dialogue_if_needed(node_id: String, search_paths: Array[String] = []) 
 		return true
 	
 	# 先尝试从缓存中查找
-	for file_path in dialogue_file_cache:
-		var cached_dialogues = dialogue_file_cache[file_path]
+	for file_path: String in dialogue_file_cache:
+		var cached_dialogues: Dictionary = dialogue_file_cache[file_path]
 		if cached_dialogues.has(node_id):
 			# 从缓存中恢复节点
 			dialogue_graph[node_id] = cached_dialogues[node_id]
@@ -173,7 +187,7 @@ func load_dialogue_if_needed(node_id: String, search_paths: Array[String] = []) 
 		]
 	
 	# 尝试从文件加载
-	for file_path in search_paths:
+	for file_path: String in search_paths:
 		if ResourceLoader.exists(file_path):
 			load_dialogue_file(file_path, true)
 			if dialogue_graph.has(node_id):
@@ -190,7 +204,7 @@ func load_dialogue_file_async(path: String, merge: bool = true) -> void:
 ## 后台预加载对话文件
 ## [param paths] 文件路径数组
 func preload_dialogue_files_async(paths: Array[String]) -> void:
-	for path in paths:
+	for path: String in paths:
 		call_deferred("load_dialogue_file", path, true)
 
 ## 释放未使用的对话节点（内存管理）
@@ -206,26 +220,27 @@ func release_unused_nodes(keep_recent: int = 50) -> void:
 	if current_node:
 		nodes_to_keep.append(current_node.node_id)
 		# 保留选项指向的节点
-		for option in current_node.options:
+		for option: DialogueOption in current_node.options:
 			if not option.next_node_id.is_empty() and option.next_node_id != "END":
 				nodes_to_keep.append(option.next_node_id)
 	
 	# 如果保留的节点数量不足，从缓存中随机选择一些
 	if nodes_to_keep.size() < keep_recent:
-		var all_node_ids = dialogue_graph.keys()
-		var remaining = keep_recent - nodes_to_keep.size()
-		for i in range(min(remaining, all_node_ids.size())):
-			var random_id = all_node_ids[randi() % all_node_ids.size()]
+		var all_node_ids: Array[String] = []
+		all_node_ids.assign(dialogue_graph.keys())
+		var remaining: int = keep_recent - nodes_to_keep.size()
+		for i: int in range(min(remaining, all_node_ids.size())):
+			var random_id: String = all_node_ids[randi() % all_node_ids.size()]
 			if not nodes_to_keep.has(random_id):
 				nodes_to_keep.append(random_id)
 	
 	# 移除未使用的节点
 	var nodes_to_remove: Array[String] = []
-	for node_id in dialogue_graph:
+	for node_id: String in dialogue_graph:
 		if not nodes_to_keep.has(node_id):
 			nodes_to_remove.append(node_id)
 	
-	for node_id in nodes_to_remove:
+	for node_id: String in nodes_to_remove:
 		dialogue_graph.erase(node_id)
 	
 	if nodes_to_remove.size() > 0:
@@ -239,64 +254,70 @@ func register_condition(condition_type: String, condition: GameCondition) -> voi
 func register_action(action_type: String, action: GameAction) -> void:
 	action_factory.register_action(action_type, action)
 
+func set_initiator(initiator: Node) -> bool:
+	if is_active and _initiator != initiator:
+		return false
+	_initiator = initiator
+	return true
+
+func clear_initiator(initiator: Node) -> void:
+	if _initiator != initiator:
+		return
+	if is_active:
+		_end_dialogue(DialogueEndReason.CANCELED)
+	if _initiator == initiator:
+		_initiator = null
+
 ## 对外提供一个开始对话的接口
 ## [param node_id] 当前需要处理的节点ID
 func start_dialogue(node_id: String) -> void:
-	if is_active:
-		return
-
 	if not dialogue_graph.has(node_id):
 		push_error("DialogueManager: 对话节点不存在 '%s'" % node_id)
-		_end_dialogue()
 		return
-
-	is_active = true # 标记对话开始
-	dialogue_started.emit()
-	process_node(node_id)
+	start_dialogue_session(node_id)
 
 ## 处理单个对话节点
 ## [param node_id] 当前需要处理的节点ID
 func process_node(node_id: String) -> void:
+	if not is_active:
+		return
 	if node_id == "END":
 		_end_dialogue()
 		return
 
 	if not dialogue_graph.has(node_id):
 		push_error("DialogueManager: 节点不存在 '%s'" % node_id)
-		_end_dialogue()
+		_end_dialogue(DialogueEndReason.FAILED)
 		return
 
 	current_node = dialogue_graph[node_id]
+	var session_id: int = _session_id
+	var character_name: String = current_node.get_character_name()
+	var text: String = current_node.get_text()
+	DialogueHistoryManager.add_entry(node_id, character_name, text, _get_choices_texts(current_node))
+	if not is_active or session_id != _session_id:
+		return
 
-	# 获取本地化文本
-	var character_name = current_node.get_character_name()
-	var text = current_node.get_text()
-	
-	# 记录对话历史
-	DialogueHistoryManager.add_entry(
-		node_id,
-		character_name,
-		text,
-		_get_choices_texts(current_node)
-	)
-	
 	# 发出文本更新信号
 	text_updated.emit(character_name, text)
+	if not is_active or session_id != _session_id:
+		return
 	
 	# 执行节点动作
-	# 使用注册的玩家获取函数，避免硬编码节点查找
-	var player = _get_player_node()
+	var player: Node = _get_player_node()
 	_execute_actions(current_node.actions, player)
+	if not is_active or session_id != _session_id:
+		return
 	
 	# 处理选项或下一节点
 	if current_node.has_choices():
 		# 获取可用的选项（过滤条件不满足的）
-		var available_options = current_node.get_available_options(player)
+		var available_options: Array[DialogueOption] = current_node.get_available_options(player)
 		
 		# 格式化选项数据（保持与UI的兼容性）
-		var formatted_choices = []
-		for option in available_options:
-			var choice_data = {
+		var formatted_choices: Array[Dictionary] = []
+		for option: DialogueOption in available_options:
+			var choice_data: Dictionary = {
 				"text": option.get_display_text(null),
 				"next_node": option.next_node_id,
 				"option_resource": option  # 保存Resource引用，方便后续使用
@@ -313,17 +334,25 @@ func process_node(node_id: String) -> void:
 ## 供UI调用，告诉我们玩家做了哪个选择
 ## [param choice_data] 玩家选择的选项数据
 func make_choice(choice_data: Dictionary) -> void:
-	# 记录选择的选项
-	if current_node:
-		var choice_text = choice_data.get("text", "")
-		DialogueHistoryManager.record_choice(current_node.node_id, choice_text)
-	
+	if not is_active:
+		return
+	var session_id: int = _session_id
 	# 如果choice_data包含option_resource，使用它
 	if choice_data.has("option_resource"):
-		var option: DialogueOption = choice_data["option_resource"]
+		var candidate: Variant = choice_data["option_resource"]
+		if not candidate is DialogueOption or current_node == null:
+			return
+		var option: DialogueOption = candidate as DialogueOption
+		if not current_node.get_available_options(_get_player_node()).has(option):
+			return
 		
+		DialogueHistoryManager.record_choice(current_node.node_id, String(choice_data.get("text", "")))
+		if not is_active or session_id != _session_id:
+			return
 		# 执行选项动作
-		_execute_actions(option.actions, null)
+		_execute_actions(option.actions, _get_player_node())
+		if not is_active or session_id != _session_id:
+			return
 		
 		# 跳转到下一节点
 		if not option.next_node_id.is_empty():
@@ -332,6 +361,10 @@ func make_choice(choice_data: Dictionary) -> void:
 			_end_dialogue()
 	else:
 		# 兼容旧格式
+		if current_node != null:
+			DialogueHistoryManager.record_choice(current_node.node_id, String(choice_data.get("text", "")))
+		if not is_active or session_id != _session_id:
+			return
 		if choice_data.has("next_node"):
 			process_node(choice_data["next_node"])
 		else:
@@ -339,7 +372,10 @@ func make_choice(choice_data: Dictionary) -> void:
 
 # 【新增】执行动作列表的辅助方法
 func _execute_actions(actions: Array[GameAction], activator: Node) -> void:
-	for action in actions:
+	var session_id: int = _session_id
+	for action: GameAction in actions:
+		if not is_active or session_id != _session_id:
+			return
 		if action:
 			# GameAction的execute需要initiator和target
 			# 对话系统中，initiator通常是Player，target是null
@@ -349,31 +385,79 @@ func _execute_actions(actions: Array[GameAction], activator: Node) -> void:
 			# 但我们可以从Resource中提取信息（如果需要）
 			# 这里暂时跳过，因为新系统直接执行GameAction
 
-## 获取玩家节点（使用注册的获取函数，避免硬编码）
-## [return] 玩家节点或 null
-func _get_player_node() -> Node:
-	if player_getter.is_valid():
-		return player_getter.call()
-	else:
-		# 如果没有注册获取函数，回退到默认方式（向后兼容）
-		push_warning("DialogueManager: 未注册玩家获取函数，使用默认方式查找")
-		return get_tree().get_first_node_in_group("Player")
-
-## 获取选项文本列表
-## [param node] 对话节点
-## [return] 选项文本数组
-func _get_choices_texts(node: DialogueNode) -> Array[String]:
-	var texts: Array[String] = []
-	if node.has_choices():
-		var player = _get_player_node()
-		var available_options = node.get_available_options(player)
-		for option in available_options:
-			texts.append(option.get_text())
-	return texts
-
 ## 处理对话结束
-func _end_dialogue() -> void:
+func _end_dialogue(reason: DialogueEndReason = DialogueEndReason.COMPLETED) -> void:
+	if not is_active:
+		return
+	var ended_id: int = _session_id
+	_session_id = -1
 	is_active = false # 标记对话结束
 	current_node = null
 	print("Dialogue Ended.")
 	dialogue_finished.emit()
+	dialogue_session_finished.emit(ended_id, reason)
+
+#region ========== 可关联对话会话 ==========
+
+func start_dialogue_session(node_id: String) -> int:
+	if is_active or not dialogue_graph.has(node_id):
+		return -1
+	_next_session_id += 1
+	_session_id = _next_session_id
+	is_active = true
+	call_deferred("_begin_session", _session_id, node_id)
+	return _session_id
+
+func is_session_current(session_id: int) -> bool:
+	return is_active and session_id == _session_id
+
+func is_dialogue_active() -> bool:
+	return is_active
+
+func advance_dialogue_session(session_id: int) -> void:
+	if session_id != _session_id or not is_active or current_node == null or current_node.has_choices():
+		return
+	process_node(current_node.next_node_id if not current_node.next_node_id.is_empty() else "END")
+
+func cancel_dialogue_session(session_id: int) -> void:
+	if session_id == _session_id and is_active:
+		_end_dialogue(DialogueEndReason.CANCELED)
+
+func make_session_choice(session_id: int, choice_data: Dictionary) -> void:
+	if is_active and session_id == _session_id:
+		make_choice(choice_data)
+
+func _begin_session(session_id: int, node_id: String) -> void:
+	if session_id != _session_id or not is_active:
+		return
+	dialogue_session_started.emit(session_id)
+	if session_id != _session_id or not is_active:
+		return
+	dialogue_started.emit()
+	if session_id == _session_id and is_active:
+		process_node(node_id)
+#endregion
+
+func _get_player_node() -> Node:
+	if is_instance_valid(_initiator):
+		return _initiator
+	if player_getter.is_valid():
+		var candidate: Variant = player_getter.call()
+		if candidate is Node and is_instance_valid(candidate):
+			return candidate as Node
+	return null
+
+func _get_choices_texts(node: DialogueNode) -> Array[String]:
+	var texts: Array[String] = []
+	for option: DialogueOption in node.get_available_options(_get_player_node()):
+		texts.append(option.get_text())
+	return texts
+
+func has_registered_action(action_type: String) -> bool:
+	return action_factory.action_type_map.has(action_type)
+
+func has_registered_condition(condition_type: String) -> bool:
+	return condition_factory.condition_type_map.has(condition_type)
+
+func _exit_tree() -> void:
+	_end_dialogue(DialogueEndReason.CANCELED)
