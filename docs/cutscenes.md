@@ -73,3 +73,11 @@ UI 使用 `advance_dialogue_session`、`make_session_choice`、`cancel_dialogue_
 `CheckpointStore`（通过 preload 使用 `scripts/core/save/checkpoint_store.gd`）负责 JSON 文件写入校验与替换；`quest_snapshot.gd` 接收显式 `Dictionary[String, Quest]` 配置，先构造独立任务副本。支持击杀/收集目标，拒绝未知任务、重复 ID、错误进度或目标配置。宿主决定何时保存、安装任务及恢复演出标记；工具不查找 ARPG 或 UI 节点，也没有替换已有 SaveStrategy。
 
 独立验证场景 `tests/verify_checkpoint_storage.tscn` 覆盖有效存取、损坏 JSON、配置校验与资源隔离。在 4.7.2 独立宿主通过。源插件丰富的历史、选项及变量仍由原有模块管理，ARPG 的简版台词记录不覆盖源仓实现。
+
+## 课程基线安装说明（2026-10-08）
+
+本阶段运行基线为 Godot 4.7.2。将源插件放入 `addons/laoli_dialogue_system`，首次启用后重新打开工程，让历史、变量、任务和对话四个 Autoload 同时生效。服务之间存在编译依赖，插件批量登记设置，避免逐个即时创建的中间状态。停用后也需重开工程，使当前编辑器中的服务声明更新。
+
+插件只移除自身登记且路径仍一致的 Autoload；宿主预先提供的同名服务不归插件移除。发生不同路径的同名服务冲突时保留宿主设置并报错，需按实际版本解决后再运行。ARPG 内嵌旧版只登记自身 DialogueManager，GameState 和 QuestManager 仍由宿主配置。不要将两个版本整目录互相覆盖。
+
+独立安装验证含登记、停用、重新构建插件对象后清理、宿主已有服务保留，以及重开后四服务实例化和变量解析。`tests/verify_plugin_install.gd` 只供隔离测试宿主作为 EditorPlugin 使用，会改变其设置，勿直接在游戏工程中启用。其余运行兼容场景保持原用法。
