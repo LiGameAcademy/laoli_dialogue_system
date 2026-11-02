@@ -4,6 +4,8 @@
 
 A Godot plugin for Resource/JSON dialogue graphs, quests, read history, variables, and host-driven cutscene playback. Actors, cameras, rewards, and world progression stay in the host game.
 
+> For more Godot learning resources and to support future development, visit [LiGameAcademy on Patreon](https://www.patreon.com/cw/LiGameAcademy).
+
 **Validated with Godot 4.7.2.** Godot 4.5 compatibility has not been verified. This repository is a plugin directory, not a standalone game project.
 
 ## Features
