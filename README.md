@@ -15,6 +15,10 @@ A Godot plugin for Resource/JSON dialogue graphs, quests, read history, variable
 
 The four-file cutscene core can run without global dialogue or quest services. The full plugin offers those services without depending on an ARPG implementation.
 
+## Release and branches
+
+[Release v0.1.0](https://github.com/LiGameAcademy/laoli_dialogue_system/releases/tag/v0.1.0) is the first formal release. Install that tag for a reproducible dependency. `master` is the protected stable branch; integration branches are temporary and are removed after their PR is merged.
+
 ## Install
 
 From a host Godot project's Git repository:
