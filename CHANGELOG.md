@@ -1,3 +1,10 @@
+## 0.1.0
+
+- Consolidate local cutscene/session contracts and portable checkpoint helpers.
+- Support explicit host integration, independent quest restore, and validated history restore.
+- Add English/Chinese documentation and disposable-host validation.
+- Validated with Godot 4.7.2; 4.5 compatibility remains unverified.
+
 # 更新日志
 
 所有重要的变更都会记录在此文件中。

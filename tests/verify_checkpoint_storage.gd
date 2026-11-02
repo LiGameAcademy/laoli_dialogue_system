@@ -29,5 +29,11 @@ func _ready() -> void:
 	file.close()
 	assert(store.load_snapshot().is_empty() and not store.last_error.is_empty())
 	assert(DirAccess.remove_absolute(ProjectSettings.globalize_path(path)) == OK)
+	var history: Array[Dictionary] = [{"node_id": "checkpoint", "speaker": "Host", "text": "Saved"}]
+	assert(DialogueHistoryManager.restore_checkpoint(history))
+	history[0]["text"] = "Changed outside"
+	assert(DialogueHistoryManager.capture_checkpoint()[0]["text"] == "Saved")
+	assert(not DialogueHistoryManager.restore_checkpoint([{"node_id": 1}]))
+	assert(DialogueHistoryManager.capture_checkpoint()[0]["text"] == "Saved")
 	print("PASS: standalone checkpoint storage, validation and quest resource isolation")
 	get_tree().quit()
