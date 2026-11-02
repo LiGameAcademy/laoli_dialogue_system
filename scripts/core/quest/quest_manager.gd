@@ -1,4 +1,5 @@
 extends Node
+## Owns runtime quests; the host supplies events and configuration lookups.
 
 ## --- 任务状态枚举 ---
 enum QuestStatus { 
@@ -90,13 +91,13 @@ func accept_quest(quest_res: Quest) -> void:
 	
 	# 2. 【关键】实例化资源 (Deep Duplicate)
 	# 资源文件在磁盘上是只读模板，我们必须复制一份独立的实例来记录进度
-	var new_quest = quest_res.duplicate(true)
+	var new_quest: Quest = quest_res.duplicate(true) as Quest
 	
 	# 3. 初始化并连接内部信号
 	new_quest.start()
 	# 监听这个新任务实例的信号，以便转发给 UI
-	new_quest.quest_updated.connect(func() -> void: quest_updated.emit(new_quest))
-	new_quest.quest_completed.connect(func(_id: String) -> void: _on_quest_completed(new_quest))
+	new_quest.quest_updated.connect(_on_quest_updated_by_id.bind(new_quest.id))
+	new_quest.quest_completed.connect(_on_quest_completed_by_id)
 	
 	# 4. 加入列表
 	active_quests.append(new_quest)
@@ -123,6 +124,28 @@ func accept_quest_by_id(quest_id: String) -> bool:
 	
 	accept_quest(quest_res)
 	return true
+
+## Installs already validated, independent instances prepared by QuestSnapshot.
+func install_checkpoint(quests: Array[Quest], completed: Array[String]) -> void:
+	active_quests = quests.duplicate()
+	completed_quest_ids = completed.duplicate()
+	for quest: Quest in active_quests:
+		quest.start()
+		quest.quest_updated.connect(_on_quest_updated_by_id.bind(quest.id))
+		quest.quest_completed.connect(_on_quest_completed_by_id)
+	quests_loaded.emit()
+
+func _on_quest_updated_by_id(quest_id: String) -> void:
+	for quest: Quest in active_quests:
+		if quest.id == quest_id:
+			quest_updated.emit(quest)
+			return
+
+func _on_quest_completed_by_id(quest_id: String) -> void:
+	for quest: Quest in active_quests:
+		if quest.id == quest_id:
+			_on_quest_completed(quest)
+			return
 
 ## 交付任务（玩家与NPC对话后选择"交任务"）
 ## [param quest_id] 任务ID

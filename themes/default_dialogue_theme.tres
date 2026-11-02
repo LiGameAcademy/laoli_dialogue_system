@@ -1,8 +1,9 @@
-[gd_resource type="Resource" script_class="DialogueTheme" load_steps=6 format=3 uid="uid://bfsucmvlx1set"]
+[gd_resource type="Resource" script_class="DialogueTheme" load_steps=5 format=3 uid="uid://bfsucmvlx1set"]
 
-[ext_resource type="FontFile" uid="uid://bj4wlflwm0lq7" path="res://addons/simple_inventory/assets/fonts/SourceHanSansSC-Regular-2.otf" id="1_bpjuh"]
 [ext_resource type="Script" uid="uid://ttg0d36pumyy" path="res://addons/laoli_dialogue_system/scripts/core/dialogue/dialogue_theme.gd" id="1_dstwa"]
-[ext_resource type="AudioStream" uid="uid://dgsdna7h8jl7h" path="res://assets/sfx/typing.mp3" id="2_nvtbu"]
+
+[sub_resource type="SystemFont" id="PortableFont"]
+font_names = PackedStringArray("Microsoft YaHei", "Noto Sans CJK SC", "PingFang SC")
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_nvtbu"]
 bg_color = Color(0.09393943, 0.18481377, 0.41044867, 1)
@@ -37,6 +38,5 @@ shadow_offset = Vector2(1, 1)
 script = ExtResource("1_dstwa")
 panel_style = SubResource("StyleBoxFlat_dstwa")
 choice_button_style = SubResource("StyleBoxFlat_nvtbu")
-choice_button_font = ExtResource("1_bpjuh")
-typing_sound = ExtResource("2_nvtbu")
+choice_button_font = SubResource("PortableFont")
 metadata/_custom_type_script = "uid://ttg0d36pumyy"

@@ -1,5 +1,7 @@
 extends Node
 
+const Transcript = preload("../save/dialogue_transcript.gd")
+
 ## 对话历史管理器
 ## 负责记录和管理玩家看过的对话内容
 
@@ -103,6 +105,31 @@ func clear_history() -> void:
 	history.clear()
 	read_nodes.clear()
 	print("对话历史已清空")
+
+## Captures the portable narrative checkpoint fields, without sharing mutable data.
+func capture_checkpoint() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for entry: DialogueHistoryEntry in history:
+		result.append({"node_id": entry.node_id, "speaker": entry.character_name, "text": entry.dialogue_text})
+	return result
+
+## Rejects malformed data before replacing the current history and read markers.
+func restore_checkpoint(data: Variant) -> bool:
+	if not Transcript.validate(data):
+		return false
+	var restored: Array[DialogueHistoryEntry] = []
+	for value: Dictionary in data:
+		var entry: DialogueHistoryEntry = DialogueHistoryEntry.new()
+		entry.node_id = String(value["node_id"])
+		entry.character_name = String(value["speaker"])
+		entry.dialogue_text = String(value["text"])
+		entry.is_read = true
+		restored.append(entry)
+	history = restored
+	read_nodes.clear()
+	for entry: DialogueHistoryEntry in history:
+		read_nodes[entry.node_id] = true
+	return true
 
 ## 获取已读节点列表（用于存档）
 ## [return] 已读节点ID数组
