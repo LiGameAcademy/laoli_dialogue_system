@@ -1,57 +1,46 @@
 extends Resource
-class_name Quest 
+class_name Quest
+## Read-only quest configuration is duplicated by QuestManager for runtime progress.
 
-@export var id: String ## 任务ID
-@export var title: String ## 任务标题
-@export_multiline var description: String ## 任务描述
+signal quest_completed(quest_id: String)
+signal quest_updated()
 
-@export var objectives: Array[QuestObjective] = [] ## 任务目标
+@export var id: String
+@export var title: String
+@export_multiline var description: String
+@export var objectives: Array[QuestObjective] = []
 
-var is_completed: bool = false ## 任务是否完成
+var is_completed: bool = false
 
-signal quest_completed(quest_id: String) ## 任务完成信号
-signal quest_updated ## 任务更新信号
-
-# --- 初始化 ---
-# 任务接取时，我们需要激活所有目标
+## Connects objective notifications without closures that retain the quest itself.
 func start() -> void:
-	for obj in objectives:
-		obj.completed.connect(
-			func(desc: String) -> void: 
-				print("目标完成：", desc)
-				_check_completion()
-		)
-		obj.updated.connect(
-			func(curr: int, req: int) -> void: 
-				print("目标更新：", curr, "/", req)
-				quest_updated.emit()
-		)
-			
-	print("任务开始：", title)
+	for objective: QuestObjective in objectives:
+		if not objective.completed.is_connected(_on_objective_completed):
+			objective.completed.connect(_on_objective_completed)
+		if not objective.updated.is_connected(_on_objective_updated):
+			objective.updated.connect(_on_objective_updated)
 
 func complete() -> void:
-	if is_completed: return
+	if is_completed:
+		return
 	is_completed = true
-	print("任务达成！！！ ", title)
 	quest_completed.emit(id)
 
-# --- 事件分发 ---
-# QuestManager 会调用这个函数
 func notify_event(event_type: String, data: Dictionary) -> void:
-	if is_completed: return
-	
-	# 把事件分发给每一个小目标
-	for obj in objectives:
-		if not obj.is_completed:
-			obj.on_game_event(event_type, data)
+	if is_completed:
+		return
+	for objective: QuestObjective in objectives:
+		if not objective.is_completed:
+			objective.on_game_event(event_type, data)
 
-## 检查任务是否完成
 func _check_completion() -> void:
-	var all_done: bool = true
-	for obj in objectives:
-		if not obj.is_completed:
-			all_done = false
-			break
-	
-	if all_done:
-		complete()
+	for objective: QuestObjective in objectives:
+		if not objective.is_completed:
+			return
+	complete()
+
+func _on_objective_completed(_description: String) -> void:
+	_check_completion()
+
+func _on_objective_updated(_current: int, _required: int) -> void:
+	quest_updated.emit()
