@@ -8,6 +8,14 @@ A Godot plugin for Resource/JSON dialogue graphs, quests, read history, variable
 
 **Validated with Godot 4.7.2.** Godot 4.5 compatibility has not been verified. This repository is a plugin directory, not a standalone game project.
 
+## Preview
+
+![Host-driven cutscene and dialogue in the ARPG example](docs/screenshots/cutscene_dialogue.png)
+
+![Boss introduction using the cutscene sequence](docs/screenshots/boss_challenge.png)
+
+Captured in the [ARPG example](https://github.com/LiGameAcademy/godot_simple_arpg_demo), with Chinese demo dialogue. The host supplies the actors, scene and camera; the plugin runs the dialogue and sequence. [Capture details](docs/screenshots/README.md).
+
 ## Features
 
 - Dialogue choices, conditions, actions, translation keys, weighted text variants, and themeable UI.

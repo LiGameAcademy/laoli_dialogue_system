@@ -8,6 +8,14 @@
 
 **当前验证环境为 Godot 4.7.2，尚未验证 Godot 4.5。** 仓库根目录即插件目录，不是独立游戏工程。
 
+## 效果预览
+
+![ARPG宿主中的剧情演出与对白](docs/screenshots/cutscene_dialogue.png)
+
+![异化回响入场演出的对白特写](docs/screenshots/boss_challenge.png)
+
+截图来自[ARPG示例工程](https://github.com/LiGameAcademy/godot_simple_arpg_demo)：演员、场景和镜头由宿主提供，插件负责对白与演出执行。[截图版本与说明](docs/screenshots/README.md)。
+
 ## 功能
 
 - 对话图、选项、条件、动作、本地化键、随机文本和主题化 UI。
