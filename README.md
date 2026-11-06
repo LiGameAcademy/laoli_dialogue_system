@@ -11,7 +11,7 @@ A Godot plugin for Resource/JSON dialogue graphs, quests, read history, variable
 
 > For more Godot learning resources and to support future development, visit [LiGameAcademy on Patreon](https://www.patreon.com/cw/LiGameAcademy).
 
-[itch.io](https://godot-li.itch.io/)
+[English Discord](https://discord.gg/5KAqAMU8x5) · [itch.io](https://godot-li.itch.io/)
 
 **Validated with Godot 4.7.2.** Godot 4.5 compatibility has not been verified. This repository is a plugin directory, not a standalone game project.
 
