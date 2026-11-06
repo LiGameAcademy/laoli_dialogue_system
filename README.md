@@ -1,10 +1,17 @@
 # Lao Li's Dialogue System
 
+[![CI](https://github.com/LiGameAcademy/laoli_dialogue_system/actions/workflows/validate.yml/badge.svg?branch=master)](https://github.com/LiGameAcademy/laoli_dialogue_system/actions/workflows/validate.yml)
+[![GitHub stars](https://img.shields.io/github/stars/LiGameAcademy/laoli_dialogue_system)](https://github.com/LiGameAcademy/laoli_dialogue_system/stargazers)
+[![Release](https://img.shields.io/github/v/release/LiGameAcademy/laoli_dialogue_system)](https://github.com/LiGameAcademy/laoli_dialogue_system/releases/latest)
+[![MIT code license](https://img.shields.io/badge/code%20license-MIT-blue)](LICENSE)
+
 [简体中文](README_zh-CN.md) · [Documentation](docs/README.md) · [MIT License](LICENSE)
 
 A Godot plugin for Resource/JSON dialogue graphs, quests, read history, variables, and host-driven cutscene playback. Actors, cameras, rewards, and world progression stay in the host game.
 
 > For more Godot learning resources and to support future development, visit [LiGameAcademy on Patreon](https://www.patreon.com/cw/LiGameAcademy).
+
+[itch.io](https://godot-li.itch.io/)
 
 **Validated with Godot 4.7.2.** Godot 4.5 compatibility has not been verified. This repository is a plugin directory, not a standalone game project.
 

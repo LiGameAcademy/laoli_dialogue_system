@@ -1,10 +1,17 @@
 # 老李对话系统
 
+[![CI](https://github.com/LiGameAcademy/laoli_dialogue_system/actions/workflows/validate.yml/badge.svg?branch=master)](https://github.com/LiGameAcademy/laoli_dialogue_system/actions/workflows/validate.yml)
+[![GitHub stars](https://img.shields.io/github/stars/LiGameAcademy/laoli_dialogue_system)](https://github.com/LiGameAcademy/laoli_dialogue_system/stargazers)
+[![Release](https://img.shields.io/github/v/release/LiGameAcademy/laoli_dialogue_system)](https://github.com/LiGameAcademy/laoli_dialogue_system/releases/latest)
+[![MIT code license](https://img.shields.io/badge/code%20license-MIT-blue)](LICENSE)
+
 [English](README.md) · [文档目录](docs/README.md) · [MIT 许可](LICENSE)
 
 面向 Godot 的 Resource / JSON 对话、任务、已读历史、变量与局部剧情演出插件。演员、镜头、奖励和剧情提交由宿主负责。
 
 > 想继续学习 Godot、获取更多项目学习资源并参与交流，欢迎加入[老李游戏学院知识星球](https://wx.zsxq.com/group/28885154818841)。
+
+[中文 Discord](https://discord.gg/V5nuzC2BcJ) · [itch.io 主页](https://godot-li.itch.io/) · [B 站主页](https://space.bilibili.com/8618918)
 
 **当前验证环境为 Godot 4.7.2，尚未验证 Godot 4.5。** 仓库根目录即插件目录，不是独立游戏工程。
 
